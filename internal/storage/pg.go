@@ -2,11 +2,16 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -26,7 +31,6 @@ func Migrate(databaseURL string) error {
 	return nil
 }
 
-// NewConnection – создает новое соединение с БД
 func NewConnection(ctx context.Context, connString string) (Storage, error) {
 	storage := &DB{}
 	var err error
@@ -38,4 +42,26 @@ func NewConnection(ctx context.Context, connString string) (Storage, error) {
 	//defer connection.Close()
 
 	return storage, nil
+}
+
+func (s *DB) Register(login, passHash string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	sqlStatement := `INSERT INTO users (user_login, password_hash) VALUES ($1, $2)`
+	_, err := s.connection.Exec(ctx, sqlStatement, login, passHash)
+
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		if pgErr.Code == pgerrcode.UniqueViolation {
+			return ErrLoginTaken
+		}
+	}
+
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return nil
 }

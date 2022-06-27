@@ -17,9 +17,9 @@ func main() {
 	}
 
 	log.Printf("Starting with config:\n"+
-		"run address: %s\n"+
-		"database URI: %s\n"+
-		"accrual system address: %s\n", cfg.RunAddress, cfg.DatabaseURI, cfg.AccrualSystemAddress)
+		"- run address: %s\n"+
+		"- database URI: %s\n"+
+		"- accrual system address: %s\n", cfg.RunAddress, cfg.DatabaseURI, cfg.AccrualSystemAddress)
 
 	err = storage.Migrate(cfg.DatabaseURI)
 	if err != nil {

@@ -38,7 +38,6 @@ func NewServer(c *Config) (*Server, error) {
 	return srv, nil
 }
 
-// func NewRouter( /*srv *Server*/) *chi.Mux {
 func NewRouter(srv *Server) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -48,7 +47,7 @@ func NewRouter(srv *Server) *chi.Mux {
 	//r.Use(RequestDecompress)
 	//r.Use(Authentication)
 	r.Use(middleware.Compress(5))
-	//r.Post("/", srv.ShortenURL)
+	r.Post("/api/user/register", srv.register)
 	//r.Post("/api/shorten", srv.ShortenJSON)
 	//r.Post("/api/shorten/batch", srv.ShortenBatch)
 	//r.Get("/{key}", srv.Expand)
