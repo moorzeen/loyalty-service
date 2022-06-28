@@ -19,6 +19,6 @@ var (
 
 type Storage interface {
 	AddUser(login, passHash string) error
-	SetSession(login string, token uuid.UUID) error
 	GetUser(login string) (User, error)
+	SetSession(login string, token uuid.UUID) error
 }

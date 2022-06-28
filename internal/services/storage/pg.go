@@ -18,7 +18,7 @@ import (
 )
 
 type DB struct {
-	connection *pgxpool.Pool
+	Connection *pgxpool.Pool
 }
 
 // Migrate – creates DB tables if not exists
@@ -37,11 +37,10 @@ func NewConnection(ctx context.Context, connString string) (Storage, error) {
 	storage := &DB{}
 	var err error
 
-	storage.connection, err = pgxpool.Connect(ctx, connString)
+	storage.Connection, err = pgxpool.Connect(ctx, connString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a new connection pool: %w", err)
 	}
-	//defer connection.Close()
 
 	return storage, nil
 }
@@ -51,8 +50,7 @@ func (s *DB) AddUser(login, passHash string) error {
 	defer cancel()
 
 	query := `INSERT INTO users (user_login, password_hash) VALUES ($1, $2)`
-	_, err := s.connection.Exec(ctx, query, login, passHash)
-
+	_, err := s.Connection.Exec(ctx, query, login, passHash)
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 		return ErrLoginTaken
@@ -72,7 +70,7 @@ func (s *DB) GetUser(login string) (User, error) {
 
 	var u User
 	query := `SELECT user_login, password_hash, session_uuid FROM users WHERE user_login = $1`
-	err := s.connection.QueryRow(ctx, query, login).
+	err := s.Connection.QueryRow(ctx, query, login).
 		Scan(&u.Login, &u.PasswordHash, &u.SessionUUID)
 
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -91,9 +89,8 @@ func (s *DB) SetSession(login string, token uuid.UUID) error {
 	defer cancel()
 
 	query := `UPDATE users SET session_uuid = $1 WHERE user_login = $2`
-	_, err := s.connection.Exec(ctx, query, token, login)
+	_, err := s.Connection.Exec(ctx, query, token, login)
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 
