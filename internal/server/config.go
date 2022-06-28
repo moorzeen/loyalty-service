@@ -12,8 +12,6 @@ type Config struct {
 	AccrualSystemAddress string `env:"ACCRUAL_SYSTEM_ADDRESS" envDefault:"http://localhost:8080"`
 }
 
-const secret = "some Good Secret"
-
 func NewConfig() (*Config, error) {
 	config := &Config{}
 

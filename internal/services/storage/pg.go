@@ -12,6 +12,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -21,7 +22,7 @@ type DB struct {
 
 // Migrate – creates DB tables if not exists
 func Migrate(databaseURL string) error {
-	m, err := migrate.New("file://internal/storage/", databaseURL)
+	m, err := migrate.New("file://internal/services/storage/", databaseURL)
 	if err != nil {
 		return fmt.Errorf("failed to init DB migrations: %w", err)
 	}
@@ -44,7 +45,7 @@ func NewConnection(ctx context.Context, connString string) (Storage, error) {
 	return storage, nil
 }
 
-func (s *DB) Register(login, passHash string) error {
+func (s *DB) AddUser(login, passHash string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -52,14 +53,31 @@ func (s *DB) Register(login, passHash string) error {
 	_, err := s.connection.Exec(ctx, sqlStatement, login, passHash)
 
 	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
-		if pgErr.Code == pgerrcode.UniqueViolation {
-			return ErrLoginTaken
-		}
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+		return ErrLoginTaken
 	}
 
 	if err != nil {
 		log.Println(err)
+		return err
+	}
+
+	return nil
+}
+
+func (s *DB) IsUser(login, hash string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var userLogin, passwordHash string
+	err := s.connection.QueryRow(ctx, "SELECT user_login, password_hash FROM users WHERE user_login = $1 AND password_hash = $2", login, hash).
+		Scan(&userLogin, &passwordHash)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrInvalidUser
+	}
+
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return err
 	}
 

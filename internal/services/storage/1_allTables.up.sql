@@ -2,7 +2,7 @@ create table USERS
 (
     ID bigserial primary key,
     USER_LOGIN text unique not null,
-    PASSWORD_HASH bytea not null
+    PASSWORD_HASH text not null
 );
 
 create table USER_ORDERS

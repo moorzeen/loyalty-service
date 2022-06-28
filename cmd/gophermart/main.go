@@ -6,7 +6,7 @@ import (
 	"os/signal"
 
 	"github.com/moorzeen/loyalty-service/internal/server"
-	"github.com/moorzeen/loyalty-service/internal/storage"
+	"github.com/moorzeen/loyalty-service/internal/services/storage"
 )
 
 func main() {

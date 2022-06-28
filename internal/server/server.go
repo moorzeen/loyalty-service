@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/moorzeen/loyalty-service/internal/storage"
+	"github.com/moorzeen/loyalty-service/internal/services/storage"
 )
 
 type Server struct {
@@ -48,11 +48,6 @@ func NewRouter(srv *Server) *chi.Mux {
 	//r.Use(Authentication)
 	r.Use(middleware.Compress(5))
 	r.Post("/api/user/register", srv.register)
-	//r.Post("/api/shorten", srv.ShortenJSON)
-	//r.Post("/api/shorten/batch", srv.ShortenBatch)
-	//r.Get("/{key}", srv.Expand)
-	//r.Get("/api/user/urls", srv.UserURLs)
-	//r.Get("/ping", srv.PingDB)
-	//r.Delete("/api/user/urls", srv.DeleteBatch)
+	r.Post("/api/user/login", srv.login)
 	return r
 }
