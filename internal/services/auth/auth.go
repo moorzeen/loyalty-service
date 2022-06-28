@@ -7,7 +7,7 @@ import (
 	"errors"
 )
 
-const secret = "some Good Secret"
+const secret = "some secret string"
 
 func PassComplexity(pass string) error {
 	if len([]rune(pass)) < 8 {

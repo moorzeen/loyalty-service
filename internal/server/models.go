@@ -1,6 +1,6 @@
 package server
 
-type user struct {
+type userCredentials struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
 }

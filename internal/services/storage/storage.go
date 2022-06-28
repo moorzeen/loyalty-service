@@ -2,11 +2,14 @@ package storage
 
 import (
 	"errors"
+
+	"github.com/google/uuid"
 )
 
 type User struct {
 	Login        string
 	PasswordHash string
+	SessionUUID  uuid.UUID
 }
 
 var (
@@ -15,6 +18,7 @@ var (
 )
 
 type Storage interface {
-	AddUser(user, passHash string) error
-	IsUser(login, hash string) error
+	AddUser(login, passHash string) error
+	SetSession(login string, token uuid.UUID) error
+	GetUser(login string) (User, error)
 }

@@ -2,14 +2,15 @@ create table USERS
 (
     ID bigserial primary key,
     USER_LOGIN text unique not null,
-    PASSWORD_HASH text not null
+    PASSWORD_HASH text not null,
+    SESSION_UUID text
 );
 
 create table USER_ORDERS
 (
     ID bigserial,
     ORDER_NUMBER bigint primary key,
-    USER_ID bigint not null references USERS (ID),
+    USER_LOGIN text unique not null references USERS (USER_LOGIN),
     UPLOADED_AT timestamptz not null default current_timestamp,
     STATUS text not null,
     ACCRUAL bigint not null default 0
