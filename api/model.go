@@ -1,6 +1,6 @@
-package server
+package api
 
-type userCredentials struct {
+type credentials struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
 }

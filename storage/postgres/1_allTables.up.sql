@@ -2,8 +2,13 @@ create table USERS
 (
     ID bigserial primary key,
     USER_LOGIN text unique not null,
-    PASSWORD_HASH text not null,
-    SESSION_UUID text
+    PASSWORD_HASH bytea not null
+);
+
+create table USER_SESSIONS
+(
+    USER_ID bigserial primary key,
+    SIGN_KEY bytea not null
 );
 
 create table USER_ORDERS

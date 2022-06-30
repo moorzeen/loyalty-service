@@ -1,36 +1,40 @@
-package server
+package api
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/moorzeen/loyalty-service/internal/services/auth"
-	"github.com/moorzeen/loyalty-service/internal/services/storage"
+	"github.com/moorzeen/loyalty-service/storage"
+	"github.com/moorzeen/loyalty-service/storage/postgres"
 )
 
-type Server struct {
+type LoyaltyServer struct {
 	Config
-	Storage storage.Storage
+	Storage storage.Service
 	Auth    auth.Service
 	Router  *chi.Mux
 }
 
-func NewServer(c *Config) (*Server, error) {
-	srv := &Server{}
+func StartServer(cfg *Config) (*LoyaltyServer, error) {
+	srv := &LoyaltyServer{}
+	srv.Config = *cfg
 
-	srv.Config = *c
+	err := postgres.Migrate(cfg.DatabaseURI)
+	if err != nil {
+		return nil, fmt.Errorf("failed to migrate DB: %w", err)
+	}
 
-	var err error
-	srv.Storage, err = storage.NewConnection(context.Background(), srv.DatabaseURI)
+	srv.Storage, err = postgres.Open(context.Background(), srv.DatabaseURI)
 	if err != nil {
 		return nil, err
 	}
 
 	srv.Auth = auth.NewService(srv.Storage)
-
 	srv.Router = NewRouter(srv)
 
 	go func() {
@@ -43,16 +47,21 @@ func NewServer(c *Config) (*Server, error) {
 	return srv, nil
 }
 
-func NewRouter(srv *Server) *chi.Mux {
+func NewRouter(srv *LoyaltyServer) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	//r.Use(RequestDecompress)
-	//r.Use(Authentication)
+	r.Use(requestDecompress)
 	r.Use(middleware.Compress(5))
 	r.Post("/api/user/register", srv.register)
 	r.Post("/api/user/login", srv.login)
+
+	// authorization required handlers
+	r.Group(func(r chi.Router) {
+		r.Use(authentication)
+		r.Post("/api/user/orders", srv.postOrder)
+	})
 	return r
 }

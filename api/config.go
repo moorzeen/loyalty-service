@@ -1,4 +1,4 @@
-package server
+package api
 
 import (
 	"flag"
@@ -12,7 +12,7 @@ type Config struct {
 	AccrualSystemAddress string `env:"ACCRUAL_SYSTEM_ADDRESS" envDefault:"http://localhost:8080"`
 }
 
-func NewConfig() (*Config, error) {
+func GetConfig() (*Config, error) {
 	config := &Config{}
 
 	err := env.Parse(config)
@@ -20,7 +20,7 @@ func NewConfig() (*Config, error) {
 		return nil, err
 	}
 
-	flag.StringVar(&config.RunAddress, "a", config.RunAddress, "server address and port")
+	flag.StringVar(&config.RunAddress, "a", config.RunAddress, "api address and port")
 	flag.StringVar(&config.DatabaseURI, "d", config.DatabaseURI, "database URI")
 	flag.StringVar(&config.AccrualSystemAddress, "r", config.AccrualSystemAddress, "accrual system address")
 	flag.Parse()

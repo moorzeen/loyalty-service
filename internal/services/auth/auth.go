@@ -2,81 +2,110 @@ package auth
 
 import (
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
-	"encoding/hex"
 	"errors"
+	"fmt"
 	"net/http"
+	"strconv"
 
-	"github.com/google/uuid"
-	"github.com/moorzeen/loyalty-service/internal/services/storage"
+	"github.com/moorzeen/loyalty-service/storage"
 )
 
 const secret = "some secret string"
+const AuthCookieName = "userAuth"
 
 type Auth struct {
-	storage storage.Storage
+	storage storage.Service
+}
+
+type Credentials struct {
+	Login    string
+	Password string
+}
+
+type User struct {
+	ID           int64
+	Login        string
+	PasswordHash []byte
+}
+
+type SignedCredentials struct {
+	ID        int64
+	Signature []byte
+}
+
+type Session struct {
+	UserID       int64
+	SignatureKey []byte
 }
 
 var (
-	ErrShortPassword = errors.New("the password is too short, requires more than 7 characters")
+	ErrShortPassword  = errors.New("the password is too short, requires more than 7 characters")
+	ErrWrongUser      = errors.New("wrong login or password")
+	ErrInvalidSession = errors.New("invalid auth token")
 )
 
 type Service interface {
-	Register(login, pass string) error
-	Login(login, pass string) (http.Cookie, error)
-	Validate(token string) error
+	Register(cred Credentials) error
+	Login(cred Credentials) (SignedCredentials, error)
+	Validate(signedCred SignedCredentials) error
 }
 
-func NewService(storage storage.Storage) Service {
+func NewService(storage storage.Service) Service {
 	return Auth{storage}
 }
 
-func (a Auth) Register(login, pass string) error {
-	err := passComplexity(pass)
-	if err != nil {
-		return err
+func (a Auth) Register(cred Credentials) error {
+
+	if err := passComplexity(cred.Password); err != nil {
+		return ErrShortPassword
 	}
 
-	hash := generateHash(pass)
+	passwordHash := generateHash(cred.Password)
 
-	err = a.storage.AddUser(login, hash)
-	if err != nil {
+	if err := a.storage.AddUser(cred.Login, passwordHash); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (a Auth) Login(login, pass string) (http.Cookie, error) {
-	authCookie := http.Cookie{}
-	user := storage.User{}
+func (a Auth) Login(cred Credentials) (SignedCredentials, error) {
 
-	user, err := a.storage.GetUser(login)
+	signedCred := SignedCredentials{}
+
+	user, err := a.storage.GetUserByLogin(cred.Login)
 	if err != nil {
-		return authCookie, err
+		return signedCred, ErrWrongUser
 	}
 
-	hash := generateHash(pass)
-
-	if user.PasswordHash != hash {
-		return authCookie, storage.ErrInvalidUser
+	if !hmac.Equal(generateHash(cred.Password), user.PasswordHash) {
+		return signedCred, fmt.Errorf("invalid password")
 	}
 
-	user.SessionUUID = uuid.New()
-
-	err = a.storage.SetSession(user.Login, user.SessionUUID)
+	signKey, err := generateKey()
 	if err != nil {
-		return http.Cookie{}, err
+		return signedCred, fmt.Errorf("failed to generate signature key: %w", err)
 	}
 
-	authCookie = http.Cookie{Name: "authToken", Value: user.SessionUUID.String()}
+	session := storage.Session{UserID: user.ID, SignatureKey: signKey}
 
-	return authCookie, nil
+	err = a.storage.AddSession(session)
+	if err != nil {
+		return signedCred, err
+	}
+
+	signedCred = signUserID(session)
+
+	return signedCred, nil
 }
 
-func (a Auth) Validate(token string) error {
+func (a Auth) Validate(signedCred SignedCredentials) error {
 	return nil
 }
+
+/* HELPERS */
 
 func passComplexity(pass string) error {
 	if len([]rune(pass)) < 8 {
@@ -85,13 +114,40 @@ func passComplexity(pass string) error {
 	return nil
 }
 
-func generateHash(pass string) string {
+func generateHash(pass string) []byte {
 	data := []byte(pass)
-	hash := make([]byte, 0)
 
 	h := hmac.New(sha256.New, []byte(secret))
 	h.Write(data)
-	hash = h.Sum(hash)
+	hash := h.Sum(nil)
 
-	return hex.EncodeToString(hash)
+	return hash
+}
+
+func generateKey() ([]byte, error) {
+	key := make([]byte, 16)
+	if _, err := rand.Read(key); err != nil {
+		return nil, err
+	}
+
+	return key, nil
+}
+
+func signUserID(session Session) SignedCredentials {
+	h := hmac.New(sha256.New, session.SignatureKey)
+	h.Write([]byte(strconv.FormatInt(session.UserID, 10)))
+	sum := h.Sum(nil)
+
+	return SignedCredentials{
+		ID:        session.UserID,
+		Signature: sum,
+	}
+}
+
+func MakeAuthCookie(u SignedCredentials) http.Cookie {
+	v := fmt.Sprintf("%d|%x", u.ID, u.Signature)
+	return http.Cookie{
+		Name:  AuthCookieName,
+		Value: v,
+	}
 }

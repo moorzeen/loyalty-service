@@ -5,35 +5,28 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/moorzeen/loyalty-service/internal/server"
-	"github.com/moorzeen/loyalty-service/internal/services/storage"
+	"github.com/moorzeen/loyalty-service/api"
 )
 
 func main() {
-
-	cfg, err := server.NewConfig()
+	cfg, err := api.GetConfig()
 	if err != nil {
 		log.Fatalf("Failed to get server configuration: %s", err)
 	}
 
-	log.Printf("Starting with config:\n"+
+	log.Printf("Strarting server with configuration:\n"+
 		"- run address: %s\n"+
 		"- database URI: %s\n"+
 		"- accrual system address: %s\n", cfg.RunAddress, cfg.DatabaseURI, cfg.AccrualSystemAddress)
 
-	err = storage.Migrate(cfg.DatabaseURI)
+	_, err = api.StartServer(cfg)
 	if err != nil {
-		log.Fatalf("Failed to migrate DB: %s", err)
+		log.Fatalf("Failed to start server: %s", err)
 	}
-
-	_, err = server.NewServer(cfg)
-	if err != nil {
-		log.Fatalf("Failed to start the server: %s", err)
-	}
-
 	log.Println("Server is listening and serving...")
 
 	awaitStop()
+	log.Println("Server stopped.")
 }
 
 func awaitStop() {
