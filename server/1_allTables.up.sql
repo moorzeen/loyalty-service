@@ -1,13 +1,13 @@
 create table USERS
 (
     ID bigserial primary key,
-    USER_LOGIN text unique not null,
+    USERNAME text unique not null,
     PASSWORD_HASH bytea not null
 );
 
 create table USER_SESSIONS
 (
-    USER_ID bigserial primary key,
+    USER_ID bigserial unique references USERS (ID),
     SIGN_KEY bytea not null
 );
 
@@ -15,7 +15,7 @@ create table USER_ORDERS
 (
     ID bigserial,
     ORDER_NUMBER bigint primary key,
-    USER_LOGIN text unique not null references USERS (USER_LOGIN),
+    USERNAME text unique not null references USERS (USERNAME),
     UPLOADED_AT timestamptz not null default current_timestamp,
     STATUS text not null,
     ACCRUAL bigint not null default 0

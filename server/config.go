@@ -1,4 +1,4 @@
-package api
+package server
 
 import (
 	"flag"
@@ -8,7 +8,7 @@ import (
 
 type Config struct {
 	RunAddress           string `env:"RUN_ADDRESS" envDefault:"localhost:8080"`
-	DatabaseURI          string `env:"DATABASE_URI" envDefault:"postgres://alexeymurzin:secret@localhost:5432/postgres?sslmode=disable"`
+	DatabaseURI          string `env:"DATABASE_URI" envDefault:"postgresql://localhost:5432/postgres?sslmode=disable"`
 	AccrualSystemAddress string `env:"ACCRUAL_SYSTEM_ADDRESS" envDefault:"http://localhost:8080"`
 }
 

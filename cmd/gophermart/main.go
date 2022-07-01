@@ -5,32 +5,36 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/moorzeen/loyalty-service/api"
+	"github.com/moorzeen/loyalty-service/server"
 )
 
 func main() {
-	cfg, err := api.GetConfig()
+	cfg, err := server.GetConfig()
 	if err != nil {
-		log.Fatalf("Failed to get server configuration: %s", err)
+		log.Fatalf("Failed to get configuration: %s", err)
 	}
 
-	log.Printf("Strarting server with configuration:\n"+
-		"- run address: %s\n"+
-		"- database URI: %s\n"+
-		"- accrual system address: %s\n", cfg.RunAddress, cfg.DatabaseURI, cfg.AccrualSystemAddress)
+	log.Printf(
+		"Got configuration:\n- run address: %s\n- database URI: %s\n- accrual system address: %s\n",
+		cfg.RunAddress, cfg.DatabaseURI, cfg.AccrualSystemAddress)
 
-	_, err = api.StartServer(cfg)
+	err = server.Migrate(cfg.DatabaseURI)
 	if err != nil {
-		log.Fatalf("Failed to start server: %s", err)
+		log.Fatalf("Failed to migrate DB: %s", err)
 	}
+
+	srv, err := server.New(cfg)
+	if err != nil {
+		log.Fatalf("Failed to init the server: %s", err)
+	}
+
+	srv.Run()
+
 	log.Println("Server is listening and serving...")
 
-	awaitStop()
-	log.Println("Server stopped.")
-}
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, os.Interrupt)
+	<-quit
 
-func awaitStop() {
-	signalChannel := make(chan os.Signal, 1)
-	signal.Notify(signalChannel, os.Interrupt)
-	<-signalChannel
+	log.Println("Server stopped")
 }

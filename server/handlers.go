@@ -1,16 +1,20 @@
-package api
+package server
 
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 
-	"github.com/moorzeen/loyalty-service/internal/services/auth"
+	"github.com/moorzeen/loyalty-service/auth"
 )
 
-func (s *LoyaltyServer) register(w http.ResponseWriter, r *http.Request) {
+type credentials struct {
+	Username string `json:"login"`
+	Password string `json:"password"`
+}
+
+func (s *LoyaltyServer) Register(w http.ResponseWriter, r *http.Request) {
 	contentType := r.Header.Get("Content-Type")
 	if contentType != "application/json" {
 		msg := fmt.Sprintf("Unsupported content type \"%s\"", contentType)
@@ -29,17 +33,16 @@ func (s *LoyaltyServer) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if cred.Login == "" || cred.Password == "" {
+	if cred.Username == "" || cred.Password == "" {
 		msg := fmt.Sprintf("Empty login/password not allowed")
 		log.Println(msg)
 		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
 
-	err = s.Auth.Register()
-
+	err = s.Auth.SignUp(r.Context(), cred.Username, cred.Password)
 	if err != nil {
-		msg := fmt.Sprintf("Failed to register: %s", err)
+		msg := fmt.Sprintf("Can't regitser: %s", err)
 		log.Println(msg)
 		http.Error(w, msg, errToStatus(err))
 		return
@@ -48,7 +51,7 @@ func (s *LoyaltyServer) register(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/api/user/login", http.StatusTemporaryRedirect)
 }
 
-func (s *LoyaltyServer) login(w http.ResponseWriter, r *http.Request) {
+func (s *LoyaltyServer) Login(w http.ResponseWriter, r *http.Request) {
 	contentType := r.Header.Get("Content-Type")
 	if contentType != "application/json" {
 		msg := fmt.Sprintf("Unsupported content type \"%s\"", contentType)
@@ -67,31 +70,29 @@ func (s *LoyaltyServer) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	signedCred := auth.Credentials{Login: cred.Login, Password: cred.Password}
+	if cred.Username == "" || cred.Password == "" {
+		msg := fmt.Sprintf("Empty login/password not allowed")
+		log.Println(msg)
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
 
-	signedUser, err := s.Auth.Login(signedCred)
-
+	authToken, err := s.Auth.SignIn(r.Context(), cred.Username, cred.Password)
 	if err != nil {
-		msg := fmt.Sprintf("Failed to login: %s", err)
+		msg := fmt.Sprintf("Can not login: %s", err)
 		log.Println(msg)
 		http.Error(w, msg, errToStatus(err))
 		return
 	}
 
-	authCookie := auth.MakeAuthCookie(signedUser)
+	authCookie := http.Cookie{
+		Value: authToken,
+		Name:  auth.UserAuthCookieName,
+	}
 	http.SetCookie(w, &authCookie)
-
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *LoyaltyServer) postOrder(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	log.Println(body)
-
+func (s *LoyaltyServer) PostOrder(w http.ResponseWriter, r *http.Request) {
+	log.Println("postOrder handler")
 }
