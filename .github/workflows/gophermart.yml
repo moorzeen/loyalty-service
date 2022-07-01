@@ -16,9 +16,9 @@ jobs:
 
     services:
       postgres:
-        image: storage1
+        image: storage
         env:
-          POSTGRES_PASSWORD: storage1
+          POSTGRES_PASSWORD: storage
           POSTGRES_DB: praktikum
         options: >-
           --health-cmd pg_isready
