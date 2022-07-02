@@ -58,7 +58,6 @@ func Authentication(next http.Handler) http.Handler {
 
 func Authenticator(s auth.Service) func(http.Handler) http.Handler {
 	ra := requestAuth{s}
-
 	return func(next http.Handler) http.Handler {
 		serveHTTP := func(w http.ResponseWriter, r *http.Request) {
 			err := ra.validateCookie(r)
@@ -67,10 +66,8 @@ func Authenticator(s auth.Service) func(http.Handler) http.Handler {
 				http.Error(w, "Login to access this endpoint", http.StatusUnauthorized)
 				return
 			}
-
 			next.ServeHTTP(w, r)
 		}
-
 		return http.HandlerFunc(serveHTTP)
 	}
 }
