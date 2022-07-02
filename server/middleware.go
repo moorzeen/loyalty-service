@@ -2,6 +2,7 @@ package server
 
 import (
 	"compress/gzip"
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -9,6 +10,8 @@ import (
 
 	"github.com/moorzeen/loyalty-service/auth"
 )
+
+const UserIDContextKey = "userID"
 
 func RequestDecompress(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -56,42 +59,44 @@ func Authentication(next http.Handler) http.Handler {
 }
 */
 
-func Authenticator(s auth.Service) func(http.Handler) http.Handler {
+func Authenticator(s auth.Auth) func(http.Handler) http.Handler {
 	ra := requestAuth{s}
 	return func(next http.Handler) http.Handler {
 		serveHTTP := func(w http.ResponseWriter, r *http.Request) {
-			err := ra.validateCookie(r)
+			userID, err := ra.validateCookie(r)
 			if err != nil {
 				log.Println(err)
 				http.Error(w, "Login to access this endpoint", http.StatusUnauthorized)
 				return
 			}
-			next.ServeHTTP(w, r)
+
+			newContext := context.WithValue(r.Context(), UserIDContextKey, userID)
+			next.ServeHTTP(w, r.WithContext(newContext))
 		}
 		return http.HandlerFunc(serveHTTP)
 	}
 }
 
 type requestAuth struct {
-	AuthService auth.Service
+	AuthService auth.Auth
 }
 
-func (a *requestAuth) validateCookie(r *http.Request) error {
+func (a *requestAuth) validateCookie(r *http.Request) (uint64, error) {
 	cookie, err := r.Cookie(auth.UserAuthCookieName)
 	if err == http.ErrNoCookie {
 		msg := fmt.Sprintf("cookie is not found: %s", err)
-		return errors.New(msg)
+		return 0, errors.New(msg)
 	}
 	if err != nil {
 		msg := fmt.Sprintf("cookie parse error: %s", err)
-		return errors.New(msg)
+		return 0, errors.New(msg)
 	}
 
-	err = a.AuthService.TokenCheck(r.Context(), cookie.Value)
+	userID, err := a.AuthService.TokenCheck(r.Context(), cookie.Value)
 	if err != nil {
 		msg := fmt.Sprintf("%s", err)
-		return errors.New(msg)
+		return 0, errors.New(msg)
 	}
 
-	return nil
+	return userID, nil
 }

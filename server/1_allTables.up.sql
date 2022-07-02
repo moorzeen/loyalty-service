@@ -13,9 +13,8 @@ create table USER_SESSIONS
 
 create table USER_ORDERS
 (
-    ID bigserial,
     ORDER_NUMBER bigint primary key,
-    USERNAME text unique not null references USERS (USERNAME),
+    USER_ID bigserial references USERS (ID),
     UPLOADED_AT timestamptz not null default current_timestamp,
     STATUS text not null,
     ACCRUAL bigint not null default 0

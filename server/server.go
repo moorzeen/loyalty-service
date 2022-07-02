@@ -11,12 +11,15 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/moorzeen/loyalty-service/auth"
-	"github.com/moorzeen/loyalty-service/auth/storage/postgres"
+	authPG "github.com/moorzeen/loyalty-service/auth/storage/postgres"
+	"github.com/moorzeen/loyalty-service/orders"
+	ordersPG "github.com/moorzeen/loyalty-service/orders/storage/postgres"
 )
 
 type LoyaltyServer struct {
 	Config
-	Auth   auth.Service
+	Auth   auth.Auth
+	Orders orders.Orders
 	Router *chi.Mux
 }
 
@@ -26,11 +29,15 @@ func New(cfg *Config) (*LoyaltyServer, error) {
 		return nil, err
 	}
 
-	authStorage := postgres.NewStorage(db)
-
 	srv := &LoyaltyServer{}
 	srv.Config = *cfg
+
+	authStorage := authPG.NewStorage(db)
 	srv.Auth = auth.NewAuth(authStorage)
+
+	ordersStorage := ordersPG.NewStorage(db)
+	srv.Orders = orders.NewOrders(ordersStorage)
+
 	srv.Router = newRouter(srv)
 
 	return srv, nil

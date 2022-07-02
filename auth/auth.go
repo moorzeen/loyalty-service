@@ -13,7 +13,6 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
 	"github.com/moorzeen/loyalty-service/auth/helpers"
-	"github.com/moorzeen/loyalty-service/auth/storage"
 )
 
 const (
@@ -22,11 +21,11 @@ const (
 )
 
 type Auth struct {
-	storage storage.Storage
+	storage Storage
 }
 
-func NewAuth(str storage.Storage) Service {
-	return &Auth{storage: str}
+func NewAuth(str Storage) Auth {
+	return Auth{storage: str}
 }
 
 func (a *Auth) SignUp(ctx context.Context, username, password string) error {
@@ -90,7 +89,7 @@ func (a *Auth) SignIn(ctx context.Context, username, password string) (string, e
 	return authToken, nil
 }
 
-func (a *Auth) TokenCheck(ctx context.Context, authToken string) error {
+func (a *Auth) TokenCheck(ctx context.Context, authToken string) (uint64, error) {
 	var (
 		userID uint64
 		sign   []byte
@@ -102,16 +101,16 @@ func (a *Auth) TokenCheck(ctx context.Context, authToken string) error {
 
 	session, err := a.storage.GetSession(ctx, userID)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return ErrInvalidAuthToken
+		return 0, ErrInvalidAuthToken
 	}
 	if err != nil {
 		log.Println(err)
-		return err
+		return 0, err
 	}
 
 	if !bytes.Equal(sign, helpers.GenerateHash(strconv.FormatUint(userID, 10), session.SignKey)) {
-		return ErrInvalidAuthToken
+		return 0, ErrInvalidAuthToken
 	}
 
-	return nil
+	return session.UserID, nil
 }

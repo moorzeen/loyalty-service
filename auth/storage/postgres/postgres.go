@@ -4,14 +4,14 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/moorzeen/loyalty-service/auth/storage"
+	"github.com/moorzeen/loyalty-service/auth"
 )
 
 type Postgres struct {
 	connection *pgxpool.Pool
 }
 
-func NewStorage(conn *pgxpool.Pool) storage.Storage {
+func NewStorage(conn *pgxpool.Pool) auth.Storage {
 	return &Postgres{connection: conn}
 }
 
@@ -26,8 +26,8 @@ func (db *Postgres) AddUser(ctx context.Context, username string, passwordHash [
 	return nil
 }
 
-func (db *Postgres) GetUser(ctx context.Context, username string) (*storage.User, error) {
-	user := &storage.User{}
+func (db *Postgres) GetUser(ctx context.Context, username string) (*auth.User, error) {
+	user := &auth.User{}
 
 	query := `SELECT username, password_hash, id FROM users WHERE username = $1`
 
@@ -50,8 +50,8 @@ func (db *Postgres) SetSession(ctx context.Context, userID uint64, signKey []byt
 	return nil
 }
 
-func (db *Postgres) GetSession(ctx context.Context, userID uint64) (*storage.Session, error) {
-	session := &storage.Session{}
+func (db *Postgres) GetSession(ctx context.Context, userID uint64) (*auth.Session, error) {
+	session := &auth.Session{}
 
 	query := `SELECT user_id, sign_key FROM user_sessions WHERE user_id = $1`
 

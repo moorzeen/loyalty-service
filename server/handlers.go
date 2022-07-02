@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -94,5 +95,29 @@ func (s *LoyaltyServer) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *LoyaltyServer) PostOrder(w http.ResponseWriter, r *http.Request) {
-	log.Println("postOrder handler")
+	contentType := r.Header.Get("Content-Type")
+	if contentType != "text/plain" {
+		msg := fmt.Sprintf("Unsupported content type \"%s\"", contentType)
+		log.Println(msg)
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+
+	orderNumber, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		msg := fmt.Sprintf("Filed to read request body: %s", err)
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+
+	userID := GetUserID(r.Context())
+	err = s.Orders.AddOrder(r.Context(), string(orderNumber), userID)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to add the order: %s", err)
+		log.Println(msg)
+		http.Error(w, msg, errToStatus(err))
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
 }
