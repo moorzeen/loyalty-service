@@ -25,6 +25,7 @@ func New(cfg *Config) (*LoyaltyServer, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	authStorage := postgres.NewStorage(db)
 
 	srv := &LoyaltyServer{}

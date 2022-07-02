@@ -18,7 +18,7 @@ func main() {
 		"Got configuration:\n- run address: %s\n- database URI: %s\n- accrual system address: %s\n",
 		cfg.RunAddress, cfg.DatabaseURI, cfg.AccrualSystemAddress)
 
-	err = server.Migrate(cfg.DatabaseURI)
+	err = server.DBmigration(cfg.DatabaseURI)
 	if err != nil {
 		log.Fatalf("Failed to migrate DB: %s", err)
 	}

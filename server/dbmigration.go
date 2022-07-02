@@ -8,7 +8,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-func Migrate(databaseURL string) error {
+func DBmigration(databaseURL string) error {
 	m, err := migrate.New("file://server/", databaseURL)
 	if err != nil {
 		return fmt.Errorf("failed to init DB migrations: %w", err)
