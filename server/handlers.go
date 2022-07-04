@@ -206,7 +206,7 @@ func (s *LoyaltyServer) Withdraw(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&wr)
 	if err != nil {
-		msg := fmt.Sprintf("Failed to parse login/password: %s", err)
+		msg := fmt.Sprintf("Failed to parse withdraw data: %s", err)
 		log.Println(msg)
 		http.Error(w, msg, http.StatusBadRequest)
 		return
