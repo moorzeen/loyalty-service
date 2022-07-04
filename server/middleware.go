@@ -11,7 +11,9 @@ import (
 	"github.com/moorzeen/loyalty-service/auth"
 )
 
-const UserIDContextKey = "userID"
+type ctxKey string
+
+const UserIDContextKey ctxKey = "userID"
 
 func RequestDecompress(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
