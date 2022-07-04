@@ -139,7 +139,7 @@ func (s *LoyaltyServer) GetOrders(w http.ResponseWriter, r *http.Request) {
 	type responseJSON struct {
 		Number     int64     `json:"number"`
 		Status     string    `json:"status"`
-		Accrual    int64     `json:"accrual,omitempty"`
+		Accrual    float64   `json:"accrual,omitempty"`
 		UploadedAt time.Time `json:"uploaded_at"`
 	}
 	result := make([]responseJSON, 0)
@@ -174,8 +174,8 @@ func (s *LoyaltyServer) GetBalance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type responseJSON struct {
-		Balance   int64 `json:"current"`
-		Withdrawn int64 `json:"withdrawn"`
+		Balance   float64 `json:"current"`
+		Withdrawn float64 `json:"withdrawn"`
 	}
 
 	result := responseJSON{
@@ -238,12 +238,10 @@ func (s *LoyaltyServer) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 
 	type responseJSON struct {
 		Number     int64     `json:"number"`
-		Sum        int64     `json:"sum"`
+		Sum        float64   `json:"sum"`
 		UploadedAt time.Time `json:"processed_at"`
 	}
 	result := make([]responseJSON, 0)
-
-	fmt.Println("434")
 
 	for _, v := range *withdrawalsList {
 		item := responseJSON{v.OrderNumber, v.Sum, v.ProcessedAt}

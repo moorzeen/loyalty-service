@@ -16,8 +16,8 @@ type Orders struct {
 
 type WithdrawRequest struct {
 	UserID      uint64
-	OrderNumber string `json:"order"`
-	WithdrawSum int64  `json:"sum"`
+	OrderNumber string  `json:"order"`
+	WithdrawSum float64 `json:"sum"`
 }
 
 func NewOrders(str Storage) Orders {
@@ -64,7 +64,7 @@ func (o *Orders) GetOrders(ctx context.Context, userID uint64) (*[]Order, error)
 	return orders, nil
 }
 
-func (o *Orders) GetBalance(ctx context.Context, userID uint64) (int64, int64, error) {
+func (o *Orders) GetBalance(ctx context.Context, userID uint64) (float64, float64, error) {
 	bal, wtn, err := o.storage.GetBalance(ctx, userID)
 	if err != nil {
 		log.Println(err)

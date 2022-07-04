@@ -79,8 +79,8 @@ func (db *Postgres) GetOrdersList(ctx context.Context, userID uint64) (*[]orders
 	return &result, nil
 }
 
-func (db *Postgres) GetBalance(ctx context.Context, userID uint64) (int64, int64, error) {
-	var bal, wtn int64
+func (db *Postgres) GetBalance(ctx context.Context, userID uint64) (float64, float64, error) {
+	var bal, wtn float64
 
 	balQuery := `SELECT balance, withdrawn FROM accounts WHERE user_id = $1`
 	err := db.connection.QueryRow(ctx, balQuery, userID).Scan(&bal, &wtn)
@@ -94,7 +94,7 @@ func (db *Postgres) GetBalance(ctx context.Context, userID uint64) (int64, int64
 	return bal, wtn, nil
 }
 
-func (db *Postgres) UpdateBalance(ctx context.Context, userID uint64, bal int64, wth int64) error {
+func (db *Postgres) UpdateBalance(ctx context.Context, userID uint64, bal float64, wth float64) error {
 	updateQuery := `UPDATE accounts SET balance = $1, withdrawn = $2 WHERE user_id = $3`
 	_, err := db.connection.Exec(ctx, updateQuery, bal, wth, userID)
 	if err != nil {
@@ -103,7 +103,7 @@ func (db *Postgres) UpdateBalance(ctx context.Context, userID uint64, bal int64,
 	return nil
 }
 
-func (db *Postgres) AddWithdrawal(ctx context.Context, userID uint64, number int64, sum int64) error {
+func (db *Postgres) AddWithdrawal(ctx context.Context, userID uint64, number int64, sum float64) error {
 	query := `INSERT INTO withdrawals (user_id, order_number, sum) VALUES ($1, $2, $3)`
 
 	_, err := db.connection.Exec(ctx, query, userID, number, sum)
