@@ -68,7 +68,7 @@ func newRouter(srv *LoyaltyServer) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	//r.Use(middleware.Logger)
+	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(RequestDecompress)
 	r.Use(middleware.Compress(5))

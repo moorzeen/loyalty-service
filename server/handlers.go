@@ -111,6 +111,7 @@ func (s *LoyaltyServer) PostOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("44")
 	userID := GetUserID(r.Context())
 	err = s.Orders.AddOrder(r.Context(), string(orderNumber), userID)
 	if err != nil {

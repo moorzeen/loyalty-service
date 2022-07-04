@@ -23,7 +23,7 @@ func (o *Orders) AddOrder(ctx context.Context, orderNumber string, userID uint64
 	number, err := helpers.ParseOrderNumber(orderNumber)
 	if err != nil {
 		log.Println(err)
-		return err
+		return ErrInvalidOrderNumber
 	}
 
 	err = o.storage.AddOrder(ctx, number, userID)
