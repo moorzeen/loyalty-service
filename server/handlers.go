@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/moorzeen/loyalty-service/auth"
+	"github.com/moorzeen/loyalty-service/orders"
 )
 
 type credentials struct {
@@ -95,7 +96,7 @@ func (s *LoyaltyServer) Login(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *LoyaltyServer) PostOrder(w http.ResponseWriter, r *http.Request) {
+func (s *LoyaltyServer) NewOrder(w http.ResponseWriter, r *http.Request) {
 	contentType := r.Header.Get("Content-Type")
 	if contentType != "text/plain" {
 		msg := fmt.Sprintf("Unsupported content type \"%s\"", contentType)
@@ -111,7 +112,6 @@ func (s *LoyaltyServer) PostOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("44")
 	userID := GetUserID(r.Context())
 	err = s.Orders.AddOrder(r.Context(), string(orderNumber), userID)
 	if err != nil {
@@ -128,7 +128,7 @@ func (s *LoyaltyServer) GetOrders(w http.ResponseWriter, r *http.Request) {
 
 	userID := GetUserID(r.Context())
 
-	orders, err := s.Orders.GetOrders(r.Context(), userID)
+	ordersList, err := s.Orders.GetOrders(r.Context(), userID)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to get orders: %s", err)
 		log.Println(msg)
@@ -143,9 +143,111 @@ func (s *LoyaltyServer) GetOrders(w http.ResponseWriter, r *http.Request) {
 		UploadedAt time.Time `json:"uploaded_at"`
 	}
 	result := make([]responseJSON, 0)
-	for _, v := range orders {
+	for _, v := range *ordersList {
 		newItem := responseJSON{v.OrderNumber, v.Status, v.Accrual, v.UploadedAt}
 		result = append(result, newItem)
+	}
+	if len(result) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	err = json.NewEncoder(w).Encode(&result)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *LoyaltyServer) GetBalance(w http.ResponseWriter, r *http.Request) {
+	userID := GetUserID(r.Context())
+
+	bal, wtn, err := s.Orders.GetBalance(r.Context(), userID)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to get balance: %s", err)
+		log.Println(msg)
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+
+	type responseJSON struct {
+		Balance   int64 `json:"current"`
+		Withdrawn int64 `json:"withdrawn"`
+	}
+
+	result := responseJSON{
+		Balance:   bal,
+		Withdrawn: wtn,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	err = json.NewEncoder(w).Encode(&result)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *LoyaltyServer) Withdraw(w http.ResponseWriter, r *http.Request) {
+	contentType := r.Header.Get("Content-Type")
+	if contentType != "application/json" {
+		msg := fmt.Sprintf("Unsupported content type \"%s\"", contentType)
+		log.Println(msg)
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+
+	wr := orders.WithdrawRequest{}
+
+	err := json.NewDecoder(r.Body).Decode(&wr)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to parse login/password: %s", err)
+		log.Println(msg)
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+
+	wr.UserID = GetUserID(r.Context())
+
+	err = s.Orders.Withdraw(r.Context(), wr)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to withdraw: %s", err)
+		log.Println(msg)
+		http.Error(w, msg, errToStatus(err))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *LoyaltyServer) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
+	userID := GetUserID(r.Context())
+
+	withdrawalsList, err := s.Orders.GetWithdrawals(r.Context(), userID)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to get withdrawals: %s", err)
+		log.Println(msg)
+		http.Error(w, msg, errToStatus(err))
+		return
+	}
+
+	type responseJSON struct {
+		Number     int64     `json:"number"`
+		Sum        int64     `json:"sum"`
+		UploadedAt time.Time `json:"processed_at"`
+	}
+	result := make([]responseJSON, 0)
+
+	fmt.Println("434")
+
+	for _, v := range *withdrawalsList {
+		item := responseJSON{v.OrderNumber, v.Sum, v.ProcessedAt}
+		result = append(result, item)
 	}
 	if len(result) == 0 {
 		w.WriteHeader(http.StatusNoContent)

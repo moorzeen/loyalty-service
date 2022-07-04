@@ -25,6 +25,8 @@ func errToStatus(err error) int {
 		return http.StatusUnprocessableEntity
 	case errors.Is(err, orders.ErrAlreadyAddByThis):
 		return http.StatusOK
+	case errors.Is(err, orders.ErrInsufficientFunds):
+		return http.StatusPaymentRequired
 	default:
 		return http.StatusInternalServerError
 	}

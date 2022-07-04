@@ -20,19 +20,17 @@ create table USER_ORDERS
     ACCRUAL bigint not null default 0
 );
 
-create table BALANCES
+create table ACCOUNTS
 (
-    ID bigserial primary key,
-    USER_ID bigint not null references USERS (ID),
+    USER_ID bigserial references USERS (ID),
     BALANCE bigint not null default 0,
-    WITHDRAWN bigint not null default 0
+    WITHDRAWN  bigint not null default 0
 );
 
 create table WITHDRAWALS
 (
-    ID bigserial primary key,
     USER_ID bigint not null references USERS (ID),
-    ORDER_NUMBER bigint references USER_ORDERS (ORDER_NUMBER),
+    ORDER_NUMBER bigint,
     SUM bigint not null default 0,
     PROCESSED_AT timestamptz not null default current_timestamp
 );

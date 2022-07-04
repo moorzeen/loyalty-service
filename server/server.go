@@ -79,8 +79,12 @@ func newRouter(srv *LoyaltyServer) *chi.Mux {
 	r.Group(func(r chi.Router) {
 		//r.Use(Authentication)
 		r.Use(Authenticator(srv.Auth))
-		r.Post("/api/user/orders", srv.PostOrder)
+		r.Post("/api/user/orders", srv.NewOrder)
 		r.Get("/api/user/orders", srv.GetOrders)
+		r.Get("/api/user/balance", srv.GetBalance)
+		r.Post("/api/user/balance/withdraw", srv.Withdraw)
+		r.Get("/api/user/withdrawals", srv.GetWithdrawals)
+
 	})
 	return r
 }
