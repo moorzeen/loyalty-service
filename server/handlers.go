@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/moorzeen/loyalty-service/auth"
 )
@@ -120,4 +121,42 @@ func (s *LoyaltyServer) PostOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusAccepted)
+}
+
+func (s *LoyaltyServer) GetOrders(w http.ResponseWriter, r *http.Request) {
+
+	userID := GetUserID(r.Context())
+
+	orders, err := s.Orders.GetOrders(r.Context(), userID)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to get orders: %s", err)
+		log.Println(msg)
+		http.Error(w, msg, errToStatus(err))
+		return
+	}
+
+	type responseJSON struct {
+		Number     int64     `json:"number"`
+		Status     string    `json:"status"`
+		Accrual    int64     `json:"accrual,omitempty"`
+		UploadedAt time.Time `json:"uploaded_at"`
+	}
+	result := make([]responseJSON, 0)
+	for _, v := range orders {
+		newItem := responseJSON{v.OrderNumber, v.Status, v.Accrual, v.UploadedAt}
+		result = append(result, newItem)
+	}
+	if len(result) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	err = json.NewEncoder(w).Encode(&result)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }

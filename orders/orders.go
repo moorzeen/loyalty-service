@@ -49,3 +49,22 @@ func (o *Orders) AddOrder(ctx context.Context, orderNumber string, userID uint64
 
 	return nil
 }
+
+func (o *Orders) GetOrders(ctx context.Context, userID uint64) ([]Order, error) {
+	orders, err := o.storage.GetOrders(ctx, userID)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	//timeFormat := "2006-1-2 15:4:5 -0700 -07"
+	//for _, v := range orders {
+	//	v.UploadedAt, err = time.Parse(timeFormat, v.UploadedAt.String())
+	//	if err != nil {
+	//		log.Println(err)
+	//		return nil, err
+	//	}
+	//}
+
+	return orders, nil
+}

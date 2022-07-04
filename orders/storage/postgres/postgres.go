@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"log"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/moorzeen/loyalty-service/orders"
@@ -43,4 +44,36 @@ func (db *Postgres) GetOrderByNumber(ctx context.Context, number int64) (*orders
 	}
 
 	return order, nil
+}
+
+func (db *Postgres) GetOrders(ctx context.Context, userID uint64) ([]orders.Order, error) {
+
+	var result []orders.Order
+
+	query := `SELECT user_id, order_number, status, uploaded_at, accrual
+				FROM user_orders WHERE user_id = $1 order by uploaded_at`
+	rows, err := db.connection.Query(ctx, query, userID)
+	if err != nil {
+		log.Println(err)
+		return result, err
+	}
+
+	for rows.Next() {
+		var o orders.Order
+		err = rows.Scan(&o.UserID, &o.OrderNumber, &o.Status, &o.UploadedAt, &o.Accrual)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+		result = append(result, o)
+	}
+
+	// проверяем на ошибки
+	err = rows.Err()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	return result, nil
 }

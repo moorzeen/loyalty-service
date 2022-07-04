@@ -80,6 +80,7 @@ func newRouter(srv *LoyaltyServer) *chi.Mux {
 		//r.Use(Authentication)
 		r.Use(Authenticator(srv.Auth))
 		r.Post("/api/user/orders", srv.PostOrder)
+		r.Get("/api/user/orders", srv.GetOrders)
 	})
 	return r
 }

@@ -16,4 +16,5 @@ type Order struct {
 type Storage interface {
 	AddOrder(ctx context.Context, number int64, userID uint64) error
 	GetOrderByNumber(ctx context.Context, number int64) (*Order, error)
+	GetOrders(ctx context.Context, userID uint64) ([]Order, error)
 }
