@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log"
-	"strconv"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
@@ -18,7 +17,7 @@ type Orders struct {
 type WithdrawRequest struct {
 	UserID      uint64
 	OrderNumber string `json:"order"`
-	WithdrawSum string `json:"sum"`
+	WithdrawSum int64  `json:"sum"`
 }
 
 func NewOrders(str Storage) Orders {
@@ -88,18 +87,17 @@ func (o *Orders) Withdraw(ctx context.Context, request WithdrawRequest) error {
 		return err
 	}
 
-	sum, err := strconv.ParseInt(request.WithdrawSum, 10, 64)
-	if sum > bal {
+	if request.WithdrawSum > bal {
 		return ErrInsufficientFunds
 	}
 
-	err = o.storage.AddWithdrawal(ctx, request.UserID, number, sum)
+	err = o.storage.AddWithdrawal(ctx, request.UserID, number, request.WithdrawSum)
 	if err != nil {
 		return err
 	}
 
-	bal -= sum
-	wtn += sum
+	bal -= request.WithdrawSum
+	wtn += request.WithdrawSum
 
 	err = o.storage.UpdateBalance(ctx, request.UserID, bal, wtn)
 	if err != nil {
