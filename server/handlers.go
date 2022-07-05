@@ -249,7 +249,7 @@ func (s *LoyaltyServer) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 		result = append(result, item)
 	}
 
-	fmt.Println(result)
+	log.Printf("problem: %v", result)
 
 	if len(result) == 0 {
 		w.WriteHeader(http.StatusNoContent)
