@@ -59,7 +59,7 @@ func (db *Postgres) UpdateOrder(accrual accrual.Accrual) (uint64, error) {
 		if err != nil {
 			return 0, err
 		}
-		result = 0
+		result = o
 	}
 
 	// проверяем на ошибки
@@ -73,8 +73,6 @@ func (db *Postgres) UpdateOrder(accrual accrual.Accrual) (uint64, error) {
 func (db *Postgres) UpdateBalance(userID uint64, acc float64) error {
 
 	log.Printf("db.UpdateBalance/ userID: %d, acrrual: %f", userID, acc)
-
-	log.Printf("")
 
 	updateQuery := `UPDATE accounts SET balance = balance + $1 WHERE user_id = $2`
 	_, err := db.connection.Exec(context.Background(), updateQuery, acc, userID)

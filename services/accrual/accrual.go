@@ -108,6 +108,7 @@ func (s *Service) responseHandler(accrual Accrual, accErr error) {
 		if err != nil {
 			log.Println(err)
 		}
+
 		err = s.storage.UpdateBalance(userID, accrual.Accrual)
 		if err != nil {
 			log.Println(err)
