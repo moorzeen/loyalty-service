@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/moorzeen/loyalty-service/services/auth"
@@ -137,14 +138,14 @@ func (s *LoyaltyServer) GetOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type responseJSON struct {
-		Number     int64     `json:"number"`
+		Number     string    `json:"number"`
 		Status     string    `json:"status"`
 		Accrual    float64   `json:"accrual,omitempty"`
 		UploadedAt time.Time `json:"uploaded_at"`
 	}
 	result := make([]responseJSON, 0)
 	for _, v := range *ordersList {
-		newItem := responseJSON{v.OrderNumber, v.Status, v.Accrual, v.UploadedAt}
+		newItem := responseJSON{strconv.FormatInt(v.OrderNumber, 10), v.Status, v.Accrual, v.UploadedAt}
 		result = append(result, newItem)
 	}
 	if len(result) == 0 {
