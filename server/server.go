@@ -42,7 +42,7 @@ func NewServer(cfg *Config) (*LoyaltyServer, error) {
 	srv.OrderService = order.NewService(ordersStorage)
 
 	accrualStorage := accrualPG.NewStorage(db)
-	client := accrual.NewClient(srv.RunAddress)
+	client := accrual.NewClient(srv.AccrualSystemAddress)
 	srv.AccrualService = accrual.NewService(accrualStorage, client)
 
 	srv.Router = newRouter(srv)
