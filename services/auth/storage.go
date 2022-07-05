@@ -20,4 +20,5 @@ type Storage interface {
 	GetUser(ctx context.Context, username string) (*User, error)
 	SetSession(ctx context.Context, userID uint64, signKey []byte) error
 	GetSession(ctx context.Context, userID uint64) (*Session, error)
+	AddAccount(ctx context.Context, userID uint64) error
 }

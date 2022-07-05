@@ -26,6 +26,17 @@ func (db *Postgres) AddUser(ctx context.Context, username string, passwordHash [
 	return nil
 }
 
+func (db *Postgres) AddAccount(ctx context.Context, userID uint64) error {
+	query := `INSERT INTO accounts (user_id, balance, withdrawn) VALUES ($1, $2, $3)`
+
+	_, err := db.connection.Exec(ctx, query, userID, 0, 0)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *Postgres) GetUser(ctx context.Context, username string) (*auth.User, error) {
 	user := &auth.User{}
 

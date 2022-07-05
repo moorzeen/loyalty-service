@@ -45,6 +45,16 @@ func (a *Service) SignUp(ctx context.Context, username, password string) error {
 		return err
 	}
 
+	userinfo, err := a.storage.GetUser(ctx, username)
+	if err != nil {
+		return err
+	}
+
+	err = a.storage.AddAccount(ctx, userinfo.ID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
