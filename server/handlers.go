@@ -238,14 +238,14 @@ func (s *LoyaltyServer) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type responseJSON struct {
-		Number     int64     `json:"number"`
+		Number     string    `json:"number"`
 		Sum        float64   `json:"sum"`
 		UploadedAt time.Time `json:"processed_at"`
 	}
 	result := make([]responseJSON, 0)
 
 	for _, v := range *withdrawalsList {
-		item := responseJSON{v.OrderNumber, v.Sum, v.ProcessedAt}
+		item := responseJSON{strconv.FormatInt(v.OrderNumber, 10), v.Sum, v.ProcessedAt}
 		result = append(result, item)
 	}
 	if len(result) == 0 {

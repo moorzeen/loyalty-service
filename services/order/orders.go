@@ -114,5 +114,7 @@ func (o *Service) GetWithdrawals(ctx context.Context, userID uint64) (*[]Withdra
 		return nil, err
 	}
 
+	log.Println(withdrawals)
+
 	return withdrawals, nil
 }
