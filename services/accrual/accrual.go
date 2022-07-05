@@ -136,15 +136,6 @@ func (s *Service) responseHandler(accrual Accrual, accErr error) {
 Если такой номер заказа есть, кидаем его в канал и помечаем в БД взятым в обработку
 */
 func (s *Service) runScheduler() {
-<<<<<<< HEAD
-	//var orderNumber int64 = 5
-	//time.Sleep(time.Second * 10)
-	//s.addChan <- orderNumber
-	//time.Sleep(time.Second * 10)
-	//s.addChan <- orderNumber + 10
-=======
-
->>>>>>> origin/dev
 	for {
 		orders, err := s.storage.GetUnprocessedOrder()
 		if err != nil {
@@ -156,8 +147,6 @@ func (s *Service) runScheduler() {
 		time.Sleep(time.Second * 1)
 	}
 
-<<<<<<< HEAD
-=======
 	/* for debugging
 	time.Sleep(time.Second * 10)
 	s.addChan <- orderNumber
@@ -165,7 +154,6 @@ func (s *Service) runScheduler() {
 	s.addChan <- orderNumber + 10
 	*/
 
->>>>>>> origin/dev
 }
 
 //func (s *Service) runDeleter() {
