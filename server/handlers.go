@@ -229,13 +229,15 @@ func (s *LoyaltyServer) Withdraw(w http.ResponseWriter, r *http.Request) {
 func (s *LoyaltyServer) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 	userID := GetUserID(r.Context())
 
-	withdrawalsList, err := s.OrderService.GetWithdrawals(r.Context(), userID)
+	withdrawals, err := s.OrderService.GetWithdrawals(r.Context(), userID)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to get withdrawals: %s", err)
 		log.Println(msg)
 		http.Error(w, msg, errToStatus(err))
 		return
 	}
+
+	log.Printf("some problem: %v", withdrawals)
 
 	type responseJSON struct {
 		Number     string    `json:"number"`
@@ -244,7 +246,7 @@ func (s *LoyaltyServer) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 	}
 	result := make([]responseJSON, 0)
 
-	for _, v := range *withdrawalsList {
+	for _, v := range *withdrawals {
 		item := responseJSON{strconv.FormatInt(v.OrderNumber, 10), v.Sum, v.ProcessedAt}
 		result = append(result, item)
 	}
