@@ -3,6 +3,7 @@ package accrual
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -46,7 +47,7 @@ func (c *Client) GetAccrual(orderNumber int64) (Accrual, error) {
 	if err != nil {
 		return acc, fmt.Errorf("failed request accrual server: %w", err)
 	}
-	//defer response.Body.Close()
+	defer response.Body.Close()
 
 	err = json.NewDecoder(response.Body).Decode(&JSONStruct)
 	if err != nil {
@@ -59,6 +60,8 @@ func (c *Client) GetAccrual(orderNumber int64) (Accrual, error) {
 	}
 	acc.Status = JSONStruct.Status
 	acc.Accrual = JSONStruct.Accrual
+
+	log.Println(acc)
 
 	return acc, nil
 }

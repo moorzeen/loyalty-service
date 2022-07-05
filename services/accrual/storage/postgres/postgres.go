@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"log"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/moorzeen/loyalty-service/services/accrual"
@@ -70,6 +71,8 @@ func (db *Postgres) UpdateOrder(accrual accrual.Accrual) (uint64, error) {
 	return result, nil
 }
 func (db *Postgres) UpdateBalance(userID uint64, acc float64) error {
+
+	log.Println(userID, acc)
 
 	updateQuery := `UPDATE accounts SET balance = balance + $1 WHERE user_id = $2`
 	_, err := db.connection.Exec(context.Background(), updateQuery, acc, userID)

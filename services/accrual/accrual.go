@@ -102,6 +102,8 @@ func (s *Service) responseHandler(accrual Accrual, accErr error) {
 	}
 
 	if accrual.Status == "PROCESSED" {
+		log.Println(accrual)
+
 		userID, err := s.storage.UpdateOrder(accrual)
 		if err != nil {
 			log.Println(err)
