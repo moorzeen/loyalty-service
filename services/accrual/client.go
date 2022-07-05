@@ -30,6 +30,14 @@ func NewClient(addr string) *Client {
 }
 
 func (c *Client) GetAccrual(orderNumber int64) (Accrual, error) {
+
+	type forParsingJSON struct {
+		OrderNumber string  `json:"order"`
+		Status      string  `json:"status"`
+		Accrual     float64 `json:"accrual"`
+	}
+	JSONStruct := forParsingJSON{}
+
 	acc := Accrual{}
 
 	url := "http://" + c.RunAddress + "/api/orders/" + strconv.FormatInt(orderNumber, 10)
@@ -40,10 +48,17 @@ func (c *Client) GetAccrual(orderNumber int64) (Accrual, error) {
 	}
 	defer response.Body.Close()
 
-	err = json.NewDecoder(response.Body).Decode(&acc)
+	err = json.NewDecoder(response.Body).Decode(&JSONStruct)
 	if err != nil {
 		return acc, fmt.Errorf("cannot parse accrual service response: %w", err)
 	}
+
+	acc.OrderNumber, err = strconv.ParseInt(JSONStruct.OrderNumber, 10, 64)
+	if err != nil {
+		return acc, err
+	}
+	acc.Status = JSONStruct.Status
+	acc.Accrual = JSONStruct.Accrual
 
 	return acc, nil
 }
