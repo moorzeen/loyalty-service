@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/moorzeen/loyalty-service/auth"
+	"github.com/moorzeen/loyalty-service/services/auth"
 )
 
 type ctxKey string
@@ -61,7 +61,7 @@ func Authentication(next http.Handler) http.Handler {
 }
 */
 
-func Authenticator(s auth.Auth) func(http.Handler) http.Handler {
+func Authenticator(s auth.Service) func(http.Handler) http.Handler {
 	ra := requestAuth{s}
 	return func(next http.Handler) http.Handler {
 		serveHTTP := func(w http.ResponseWriter, r *http.Request) {
@@ -80,7 +80,7 @@ func Authenticator(s auth.Auth) func(http.Handler) http.Handler {
 }
 
 type requestAuth struct {
-	AuthService auth.Auth
+	AuthService auth.Service
 }
 
 func (a *requestAuth) validateCookie(r *http.Request) (uint64, error) {

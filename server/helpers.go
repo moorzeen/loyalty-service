@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/moorzeen/loyalty-service/auth"
-	"github.com/moorzeen/loyalty-service/orders"
+	"github.com/moorzeen/loyalty-service/services/auth"
+	"github.com/moorzeen/loyalty-service/services/order"
 )
 
 func errToStatus(err error) int {
@@ -14,18 +14,18 @@ func errToStatus(err error) int {
 	case errors.Is(err, auth.ErrShortPassword):
 		return http.StatusBadRequest
 	case errors.Is(err, auth.ErrUsernameTaken) ||
-		errors.Is(err, orders.ErrAddedByOther):
+		errors.Is(err, order.ErrAddedByOther):
 		return http.StatusConflict
 	case errors.Is(err, auth.ErrInvalidUser) ||
 		errors.Is(err, auth.ErrInvalidAuthToken) ||
 		errors.Is(err, auth.ErrNoUser) ||
 		errors.Is(err, auth.ErrWrongPassword):
 		return http.StatusUnauthorized
-	case errors.Is(err, orders.ErrInvalidOrderNumber):
+	case errors.Is(err, order.ErrInvalidOrderNumber):
 		return http.StatusUnprocessableEntity
-	case errors.Is(err, orders.ErrAlreadyAddByThis):
+	case errors.Is(err, order.ErrAlreadyAddByThis):
 		return http.StatusOK
-	case errors.Is(err, orders.ErrInsufficientFunds):
+	case errors.Is(err, order.ErrInsufficientFunds):
 		return http.StatusPaymentRequired
 	default:
 		return http.StatusInternalServerError

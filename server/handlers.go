@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/moorzeen/loyalty-service/auth"
-	"github.com/moorzeen/loyalty-service/orders"
+	"github.com/moorzeen/loyalty-service/services/auth"
+	"github.com/moorzeen/loyalty-service/services/order"
 )
 
 type credentials struct {
@@ -43,7 +43,7 @@ func (s *LoyaltyServer) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.Auth.SignUp(r.Context(), cred.Username, cred.Password)
+	err = s.AuthService.SignUp(r.Context(), cred.Username, cred.Password)
 	if err != nil {
 		msg := fmt.Sprintf("Can't regitser: %s", err)
 		log.Println(msg)
@@ -80,7 +80,7 @@ func (s *LoyaltyServer) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authToken, err := s.Auth.SignIn(r.Context(), cred.Username, cred.Password)
+	authToken, err := s.AuthService.SignIn(r.Context(), cred.Username, cred.Password)
 	if err != nil {
 		msg := fmt.Sprintf("Can not login: %s", err)
 		log.Println(msg)
@@ -113,7 +113,7 @@ func (s *LoyaltyServer) NewOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := GetUserID(r.Context())
-	err = s.Orders.AddOrder(r.Context(), string(orderNumber), userID)
+	err = s.OrderService.AddOrder(r.Context(), string(orderNumber), userID)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to add the order: %s", err)
 		log.Println(msg)
@@ -128,9 +128,9 @@ func (s *LoyaltyServer) GetOrders(w http.ResponseWriter, r *http.Request) {
 
 	userID := GetUserID(r.Context())
 
-	ordersList, err := s.Orders.GetOrders(r.Context(), userID)
+	ordersList, err := s.OrderService.GetOrders(r.Context(), userID)
 	if err != nil {
-		msg := fmt.Sprintf("Failed to get orders: %s", err)
+		msg := fmt.Sprintf("Failed to get order: %s", err)
 		log.Println(msg)
 		http.Error(w, msg, errToStatus(err))
 		return
@@ -165,7 +165,7 @@ func (s *LoyaltyServer) GetOrders(w http.ResponseWriter, r *http.Request) {
 func (s *LoyaltyServer) GetBalance(w http.ResponseWriter, r *http.Request) {
 	userID := GetUserID(r.Context())
 
-	bal, wtn, err := s.Orders.GetBalance(r.Context(), userID)
+	bal, wtn, err := s.OrderService.GetBalance(r.Context(), userID)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to get balance: %s", err)
 		log.Println(msg)
@@ -202,7 +202,7 @@ func (s *LoyaltyServer) Withdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wr := orders.WithdrawRequest{}
+	wr := order.WithdrawRequest{}
 
 	err := json.NewDecoder(r.Body).Decode(&wr)
 	if err != nil {
@@ -214,7 +214,7 @@ func (s *LoyaltyServer) Withdraw(w http.ResponseWriter, r *http.Request) {
 
 	wr.UserID = GetUserID(r.Context())
 
-	err = s.Orders.Withdraw(r.Context(), wr)
+	err = s.OrderService.Withdraw(r.Context(), wr)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to withdraw: %s", err)
 		log.Println(msg)
@@ -228,7 +228,7 @@ func (s *LoyaltyServer) Withdraw(w http.ResponseWriter, r *http.Request) {
 func (s *LoyaltyServer) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 	userID := GetUserID(r.Context())
 
-	withdrawalsList, err := s.Orders.GetWithdrawals(r.Context(), userID)
+	withdrawalsList, err := s.OrderService.GetWithdrawals(r.Context(), userID)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to get withdrawals: %s", err)
 		log.Println(msg)

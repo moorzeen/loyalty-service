@@ -1,4 +1,4 @@
-package orders
+package order
 
 import (
 	"context"
@@ -7,10 +7,10 @@ import (
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
-	"github.com/moorzeen/loyalty-service/orders/helpers"
+	"github.com/moorzeen/loyalty-service/services/order/helpers"
 )
 
-type Orders struct {
+type Service struct {
 	storage Storage
 }
 
@@ -20,11 +20,11 @@ type WithdrawRequest struct {
 	WithdrawSum float64 `json:"sum"`
 }
 
-func NewOrders(str Storage) Orders {
-	return Orders{storage: str}
+func NewService(str Storage) *Service {
+	return &Service{storage: str}
 }
 
-func (o *Orders) AddOrder(ctx context.Context, orderNumber string, userID uint64) error {
+func (o *Service) AddOrder(ctx context.Context, orderNumber string, userID uint64) error {
 	number, err := helpers.ParseOrderNumber(orderNumber)
 	if err != nil {
 		log.Println(err)
@@ -54,7 +54,7 @@ func (o *Orders) AddOrder(ctx context.Context, orderNumber string, userID uint64
 	return nil
 }
 
-func (o *Orders) GetOrders(ctx context.Context, userID uint64) (*[]Order, error) {
+func (o *Service) GetOrders(ctx context.Context, userID uint64) (*[]Order, error) {
 	orders, err := o.storage.GetOrdersList(ctx, userID)
 	if err != nil {
 		log.Println(err)
@@ -64,7 +64,7 @@ func (o *Orders) GetOrders(ctx context.Context, userID uint64) (*[]Order, error)
 	return orders, nil
 }
 
-func (o *Orders) GetBalance(ctx context.Context, userID uint64) (float64, float64, error) {
+func (o *Service) GetBalance(ctx context.Context, userID uint64) (float64, float64, error) {
 	bal, wtn, err := o.storage.GetBalance(ctx, userID)
 	if err != nil {
 		log.Println(err)
@@ -74,7 +74,7 @@ func (o *Orders) GetBalance(ctx context.Context, userID uint64) (float64, float6
 	return bal, wtn, nil
 }
 
-func (o *Orders) Withdraw(ctx context.Context, request WithdrawRequest) error {
+func (o *Service) Withdraw(ctx context.Context, request WithdrawRequest) error {
 
 	number, err := helpers.ParseOrderNumber(request.OrderNumber)
 	if err != nil {
@@ -107,7 +107,7 @@ func (o *Orders) Withdraw(ctx context.Context, request WithdrawRequest) error {
 	return nil
 }
 
-func (o *Orders) GetWithdrawals(ctx context.Context, userID uint64) (*[]Withdrawal, error) {
+func (o *Service) GetWithdrawals(ctx context.Context, userID uint64) (*[]Withdrawal, error) {
 	withdrawals, err := o.storage.GetUserWithdrawals(ctx, userID)
 	if err != nil {
 		log.Println(err)

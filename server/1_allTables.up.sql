@@ -17,6 +17,7 @@ create table USER_ORDERS
     USER_ID bigserial not null references USERS (ID),
     UPLOADED_AT timestamptz not null default current_timestamp,
     STATUS text not null,
+    IN_BUFFER bool default false,
     ACCRUAL numeric default 0
 );
 

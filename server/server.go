@@ -10,20 +10,23 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/moorzeen/loyalty-service/auth"
-	authPG "github.com/moorzeen/loyalty-service/auth/storage/postgres"
-	"github.com/moorzeen/loyalty-service/orders"
-	ordersPG "github.com/moorzeen/loyalty-service/orders/storage/postgres"
+	"github.com/moorzeen/loyalty-service/services/accrual"
+	accrualPG "github.com/moorzeen/loyalty-service/services/accrual/storage/postgres"
+	"github.com/moorzeen/loyalty-service/services/auth"
+	authPG "github.com/moorzeen/loyalty-service/services/auth/storage/postgres"
+	"github.com/moorzeen/loyalty-service/services/order"
+	ordersPG "github.com/moorzeen/loyalty-service/services/order/storage/postgres"
 )
 
 type LoyaltyServer struct {
 	Config
-	Auth   auth.Auth
-	Orders orders.Orders
-	Router *chi.Mux
+	AuthService    *auth.Service
+	OrderService   *order.Service
+	AccrualService *accrual.Service
+	Router         *chi.Mux
 }
 
-func New(cfg *Config) (*LoyaltyServer, error) {
+func NewServer(cfg *Config) (*LoyaltyServer, error) {
 	db, err := initDB(cfg.DatabaseURI)
 	if err != nil {
 		return nil, err
@@ -33,10 +36,14 @@ func New(cfg *Config) (*LoyaltyServer, error) {
 	srv.Config = *cfg
 
 	authStorage := authPG.NewStorage(db)
-	srv.Auth = auth.NewAuth(authStorage)
+	srv.AuthService = auth.NewService(authStorage)
 
 	ordersStorage := ordersPG.NewStorage(db)
-	srv.Orders = orders.NewOrders(ordersStorage)
+	srv.OrderService = order.NewService(ordersStorage)
+
+	accrualStorage := accrualPG.NewStorage(db)
+	client := accrual.NewClient(srv.RunAddress)
+	srv.AccrualService = accrual.NewService(accrualStorage, client)
 
 	srv.Router = newRouter(srv)
 
@@ -78,7 +85,7 @@ func newRouter(srv *LoyaltyServer) *chi.Mux {
 	// authorization required handlers
 	r.Group(func(r chi.Router) {
 		//r.Use(Authentication)
-		r.Use(Authenticator(srv.Auth))
+		r.Use(Authenticator(*srv.AuthService))
 		r.Post("/api/user/orders", srv.NewOrder)
 		r.Get("/api/user/orders", srv.GetOrders)
 		r.Get("/api/user/balance", srv.GetBalance)

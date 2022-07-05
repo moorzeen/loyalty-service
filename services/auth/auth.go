@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
-	"github.com/moorzeen/loyalty-service/auth/helpers"
+	"github.com/moorzeen/loyalty-service/services/auth/helpers"
 )
 
 const (
@@ -20,15 +20,15 @@ const (
 	UserAuthCookieName = "authToken"
 )
 
-type Auth struct {
+type Service struct {
 	storage Storage
 }
 
-func NewAuth(str Storage) Auth {
-	return Auth{storage: str}
+func NewService(str Storage) *Service {
+	return &Service{storage: str}
 }
 
-func (a *Auth) SignUp(ctx context.Context, username, password string) error {
+func (a *Service) SignUp(ctx context.Context, username, password string) error {
 	if err := helpers.PassComplexity(password); err != nil {
 		return ErrShortPassword
 	}
@@ -48,7 +48,7 @@ func (a *Auth) SignUp(ctx context.Context, username, password string) error {
 	return nil
 }
 
-func (a *Auth) SignIn(ctx context.Context, username, password string) (string, error) {
+func (a *Service) SignIn(ctx context.Context, username, password string) (string, error) {
 
 	// get user from BD
 	user, err := a.storage.GetUser(ctx, username)
@@ -89,7 +89,7 @@ func (a *Auth) SignIn(ctx context.Context, username, password string) (string, e
 	return authToken, nil
 }
 
-func (a *Auth) TokenCheck(ctx context.Context, authToken string) (uint64, error) {
+func (a *Service) TokenCheck(ctx context.Context, authToken string) (uint64, error) {
 	var (
 		userID uint64
 		sign   []byte
