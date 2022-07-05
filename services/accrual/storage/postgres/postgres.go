@@ -47,7 +47,7 @@ func (db *Postgres) GetUnprocessedOrder() ([]int64, error) {
 func (db *Postgres) UpdateOrder(accrual accrual.Accrual) (uint64, error) {
 	var result uint64
 
-	updateQuery := `UPDATE user_orders SET status = $1, accrual = $2 WHERE order_number = $3 RETURNING order_number`
+	updateQuery := `UPDATE user_orders SET status = $1, accrual = $2 WHERE order_number = $3 RETURNING user_id`
 	rows, err := db.connection.Query(context.Background(), updateQuery, accrual.Status, accrual.Accrual, accrual.OrderNumber)
 	if err != nil {
 		return 0, err
@@ -72,7 +72,9 @@ func (db *Postgres) UpdateOrder(accrual accrual.Accrual) (uint64, error) {
 }
 func (db *Postgres) UpdateBalance(userID uint64, acc float64) error {
 
-	log.Println(userID, acc)
+	log.Printf("db.UpdateBalance/ userID: %d, acrrual: %f", userID, acc)
+
+	log.Printf("")
 
 	updateQuery := `UPDATE accounts SET balance = balance + $1 WHERE user_id = $2`
 	_, err := db.connection.Exec(context.Background(), updateQuery, acc, userID)
