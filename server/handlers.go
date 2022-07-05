@@ -248,6 +248,9 @@ func (s *LoyaltyServer) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 		item := responseJSON{strconv.FormatInt(v.OrderNumber, 10), v.Sum, v.ProcessedAt}
 		result = append(result, item)
 	}
+
+	fmt.Println(result)
+
 	if len(result) == 0 {
 		w.WriteHeader(http.StatusNoContent)
 		return
