@@ -6,14 +6,14 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/moorzeen/loyalty-service/orders"
+	"github.com/moorzeen/loyalty-service/services/order"
 )
 
 type Postgres struct {
 	connection *pgxpool.Pool
 }
 
-func NewStorage(conn *pgxpool.Pool) orders.Storage {
+func NewStorage(conn *pgxpool.Pool) order.Storage {
 	return &Postgres{connection: conn}
 }
 
@@ -28,8 +28,8 @@ func (db *Postgres) AddOrder(ctx context.Context, number int64, userID uint64) e
 	return nil
 }
 
-func (db *Postgres) GetOrder(ctx context.Context, number int64) (*orders.Order, error) {
-	order := &orders.Order{}
+func (db *Postgres) GetOrder(ctx context.Context, number int64) (*order.Order, error) {
+	order := &order.Order{}
 
 	query := `SELECT order_number, user_id, status, uploaded_at, accrual FROM user_orders WHERE order_number = $1`
 
@@ -47,9 +47,9 @@ func (db *Postgres) GetOrder(ctx context.Context, number int64) (*orders.Order, 
 	return order, nil
 }
 
-func (db *Postgres) GetOrdersList(ctx context.Context, userID uint64) (*[]orders.Order, error) {
+func (db *Postgres) GetOrdersList(ctx context.Context, userID uint64) (*[]order.Order, error) {
 
-	var result []orders.Order
+	var result []order.Order
 
 	query := `SELECT user_id, order_number, status, uploaded_at, accrual
 				FROM user_orders WHERE user_id = $1 order by uploaded_at`
@@ -60,7 +60,7 @@ func (db *Postgres) GetOrdersList(ctx context.Context, userID uint64) (*[]orders
 	}
 
 	for rows.Next() {
-		var o orders.Order
+		var o order.Order
 		err = rows.Scan(&o.UserID, &o.OrderNumber, &o.Status, &o.UploadedAt, &o.Accrual)
 		if err != nil {
 			log.Println(err)
@@ -114,8 +114,8 @@ func (db *Postgres) AddWithdrawal(ctx context.Context, userID uint64, number int
 	return nil
 }
 
-func (db *Postgres) GetUserWithdrawals(ctx context.Context, userID uint64) (*[]orders.Withdrawal, error) {
-	var result []orders.Withdrawal
+func (db *Postgres) GetUserWithdrawals(ctx context.Context, userID uint64) (*[]order.Withdrawal, error) {
+	var result []order.Withdrawal
 
 	query := `SELECT order_number, sum, processed_at FROM withdrawals WHERE user_id = $1 order by processed_at`
 	rows, err := db.connection.Query(ctx, query, userID)
@@ -125,7 +125,7 @@ func (db *Postgres) GetUserWithdrawals(ctx context.Context, userID uint64) (*[]o
 	}
 
 	for rows.Next() {
-		var o orders.Withdrawal
+		var o order.Withdrawal
 		err = rows.Scan(&o.OrderNumber, &o.Sum, &o.ProcessedAt)
 		if err != nil {
 			log.Println(err)

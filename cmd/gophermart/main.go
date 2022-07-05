@@ -23,7 +23,7 @@ func main() {
 		log.Fatalf("Failed to migrate DB: %s", err)
 	}
 
-	srv, err := server.New(cfg)
+	srv, err := server.NewServer(cfg)
 	if err != nil {
 		log.Fatalf("Failed to init the server: %s", err)
 	}
