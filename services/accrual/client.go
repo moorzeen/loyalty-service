@@ -40,13 +40,13 @@ func (c *Client) GetAccrual(orderNumber int64) (Accrual, error) {
 
 	acc := Accrual{}
 
-	url := "http://" + c.RunAddress + "/api/orders/" + strconv.FormatInt(orderNumber, 10)
+	url := c.RunAddress + "/api/orders/" + strconv.FormatInt(orderNumber, 10)
 
 	response, err := c.Get(url)
 	if err != nil {
 		return acc, fmt.Errorf("failed request accrual server: %w", err)
 	}
-	defer response.Body.Close()
+	//defer response.Body.Close()
 
 	err = json.NewDecoder(response.Body).Decode(&JSONStruct)
 	if err != nil {
