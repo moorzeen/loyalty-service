@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -15,10 +14,7 @@ type DB struct {
 	pool *pgxpool.Pool
 }
 
-func NewStorage(link string) (storage.Service, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
+func NewStorage(ctx context.Context, link string) (storage.Service, error) {
 	pool, err := pgxpool.Connect(ctx, link)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a new connection pool: %w", err)

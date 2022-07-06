@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"log"
 	"net/http"
 
@@ -23,11 +24,13 @@ type LoyaltyServer struct {
 }
 
 func NewServer(cfg *config) (*LoyaltyServer, error) {
+	ctx := context.Background()
+	var err error
+
 	ls := &LoyaltyServer{}
 	ls.config = *cfg
 
-	var err error
-	ls.storage, err = postgres.NewStorage(cfg.DatabaseURI)
+	ls.storage, err = postgres.NewStorage(ctx, cfg.DatabaseURI)
 	if err != nil {
 		return nil, err
 	}

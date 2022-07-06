@@ -38,7 +38,7 @@ func (ls *LoyaltyServer) register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if cred.Username == "" || cred.Password == "" {
-		msg := "Empty login/password not allowed"
+		msg := "Empty login or password not allowed"
 		log.Println(msg)
 		http.Error(w, msg, http.StatusBadRequest)
 		return
