@@ -11,13 +11,11 @@ import (
 type Service struct {
 	client      *Client
 	storage     storage.Service
-	tick        *time.Ticker       // Тикер для проверки новых заказов в БД
-	addChan     chan string        // Канал добавления номера заказа в список обработки
-	delChan     chan string        // Канал удаления номера заказа из списка обработки
-	orderBuffer map[string]string  // Буфер заказов для обработки
-	resultChan  chan resultChannel // Канал для передачи ошибок
-	resumeChan  chan struct{}      // Канал для сигнала о продолжении опроса
-	stopChan    chan struct{}      // Канал для сигнала о приостановке опроса
+	tick        *time.Ticker      // Тикер для проверки новых заказов в БД
+	addChan     chan string       // Канал добавления номера заказа в список обработки
+	delChan     chan string       // Канал удаления номера заказа из списка обработки
+	orderBuffer map[string]string // Буфер заказов для обработки
+	stopChan    chan struct{}     // Канал для сигнала о приостановке опроса
 	mutex       *sync.Mutex
 }
 
@@ -29,8 +27,6 @@ func NewService(str storage.Service, cli *Client) Service {
 		orderBuffer: make(map[string]string, 0),
 		addChan:     make(chan string, 1),
 		delChan:     make(chan string, 1),
-		resultChan:  make(chan resultChannel, 1),
-		resumeChan:  make(chan struct{}, 1),
 		stopChan:    make(chan struct{}, 1),
 		mutex:       &sync.Mutex{},
 	}
@@ -42,16 +38,6 @@ func NewService(str storage.Service, cli *Client) Service {
 	return acc
 }
 
-type resultChannel struct {
-	storage.Accrual
-	err error
-}
-
-type ErrTooManyRequests struct {
-	RetryAfter time.Duration
-	Err        error
-}
-
 func (s *Service) runManager() {
 	for {
 		select {
@@ -60,13 +46,11 @@ func (s *Service) runManager() {
 			s.orderBuffer[o] = o
 			s.mutex.Unlock()
 			log.Printf("Order %s added to buffer", o)
-
 		case o := <-s.delChan:
 			s.mutex.Lock()
 			delete(s.orderBuffer, o)
 			s.mutex.Unlock()
 			log.Printf("Order %s deleted from buffer", o)
-
 		}
 	}
 }
@@ -137,8 +121,4 @@ func (s *Service) runScheduler() {
 		}
 		time.Sleep(time.Second * 1)
 	}
-}
-
-func (s *Service) resume() {
-	s.resumeChan <- struct{}{}
 }
