@@ -9,6 +9,10 @@ import (
 	"github.com/moorzeen/loyalty-service/internal/order"
 )
 
+func getUserID(ctx context.Context) uint64 {
+	return ctx.Value(UserIDContextKey).(uint64)
+}
+
 func errToStatus(err error) int {
 	switch {
 	case
@@ -36,8 +40,4 @@ func errToStatus(err error) int {
 	default:
 		return http.StatusInternalServerError
 	}
-}
-
-func GetUserID(ctx context.Context) uint64 {
-	return ctx.Value(UserIDContextKey).(uint64)
 }

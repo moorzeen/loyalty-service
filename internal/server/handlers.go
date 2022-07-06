@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/moorzeen/loyalty-service/internal/auth"
@@ -113,7 +112,8 @@ func (ls *LoyaltyServer) newOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := GetUserID(r.Context())
+	userID := getUserID(r.Context())
+
 	err = ls.order.AddOrder(r.Context(), string(orderNumber), userID)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to add the order: %s", err)
@@ -126,10 +126,9 @@ func (ls *LoyaltyServer) newOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ls *LoyaltyServer) getOrders(w http.ResponseWriter, r *http.Request) {
+	userID := getUserID(r.Context())
 
-	userID := GetUserID(r.Context())
-
-	ordersList, err := ls.order.GetOrders(r.Context(), userID)
+	orders, err := ls.order.GetOrders(r.Context(), userID)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to get order: %s", err)
 		log.Println(msg)
@@ -143,11 +142,14 @@ func (ls *LoyaltyServer) getOrders(w http.ResponseWriter, r *http.Request) {
 		Accrual    float64   `json:"accrual,omitempty"`
 		UploadedAt time.Time `json:"uploaded_at"`
 	}
+
 	result := make([]responseJSON, 0)
-	for _, v := range *ordersList {
-		newItem := responseJSON{strconv.FormatInt(v.OrderNumber, 10), v.Status, v.Accrual, v.UploadedAt}
+
+	for _, v := range *orders {
+		newItem := responseJSON{v.OrderNumber, v.Status, v.Accrual, v.UploadedAt}
 		result = append(result, newItem)
 	}
+
 	if len(result) == 0 {
 		w.WriteHeader(http.StatusNoContent)
 		return
@@ -164,7 +166,7 @@ func (ls *LoyaltyServer) getOrders(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ls *LoyaltyServer) getBalance(w http.ResponseWriter, r *http.Request) {
-	userID := GetUserID(r.Context())
+	userID := getUserID(r.Context())
 
 	bal, wtn, err := ls.order.GetBalance(r.Context(), userID)
 	if err != nil {
@@ -213,7 +215,7 @@ func (ls *LoyaltyServer) withdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wr.UserID = GetUserID(r.Context())
+	wr.UserID = getUserID(r.Context())
 
 	err = ls.order.Withdraw(r.Context(), wr)
 	if err != nil {
@@ -227,7 +229,7 @@ func (ls *LoyaltyServer) withdraw(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ls *LoyaltyServer) getWithdrawals(w http.ResponseWriter, r *http.Request) {
-	userID := GetUserID(r.Context())
+	userID := getUserID(r.Context())
 
 	withdrawals, err := ls.order.GetWithdrawals(r.Context(), userID)
 	if err != nil {
@@ -247,7 +249,7 @@ func (ls *LoyaltyServer) getWithdrawals(w http.ResponseWriter, r *http.Request) 
 	result := make([]responseJSON, 0)
 
 	for _, v := range *withdrawals {
-		item := responseJSON{strconv.FormatInt(v.OrderNumber, 10), v.Sum, v.ProcessedAt}
+		item := responseJSON{v.OrderNumber, v.Sum, v.ProcessedAt}
 		result = append(result, item)
 	}
 

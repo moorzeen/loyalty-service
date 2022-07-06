@@ -3,9 +3,7 @@ package accrual
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/moorzeen/loyalty-service/internal/storage"
@@ -26,7 +24,7 @@ func NewClient(addr string) *Client {
 	}
 }
 
-func (c *Client) GetAccrual(orderNumber int64) (storage.Accrual, error) {
+func (c *Client) GetAccrual(orderNumber string) (storage.Accrual, error) {
 
 	type forParsingJSON struct {
 		OrderNumber string  `json:"order"`
@@ -37,7 +35,7 @@ func (c *Client) GetAccrual(orderNumber int64) (storage.Accrual, error) {
 
 	acc := storage.Accrual{}
 
-	url := c.RunAddress + "/api/orders/" + strconv.FormatInt(orderNumber, 10)
+	url := c.RunAddress + "/api/orders/" + orderNumber
 
 	response, err := c.Get(url)
 	if err != nil {
@@ -50,14 +48,9 @@ func (c *Client) GetAccrual(orderNumber int64) (storage.Accrual, error) {
 		return acc, fmt.Errorf("cannot parse accrual service response: %w", err)
 	}
 
-	acc.OrderNumber, err = strconv.ParseInt(JSONStruct.OrderNumber, 10, 64)
-	if err != nil {
-		return acc, err
-	}
+	acc.OrderNumber = orderNumber
 	acc.Status = JSONStruct.Status
 	acc.Accrual = JSONStruct.Accrual
-
-	log.Println(acc)
 
 	return acc, nil
 }

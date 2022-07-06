@@ -4,19 +4,14 @@ import (
 	"strconv"
 )
 
-func ParseOrderNumber(s string) (int64, error) {
-	orderNumber, err := strconv.ParseInt(s, 10, 64)
-	if err != nil {
-		return orderNumber, err
-	}
-
+func parseOrderNumber(s string) error {
 	n := len(s)
 	checksum := 0
 
 	for i := 1; i <= len(s); i++ {
 		d, err := strconv.Atoi(string(s[n-i]))
 		if err != nil {
-			return orderNumber, err
+			return err
 		}
 
 		if i%2 == 0 {
@@ -31,8 +26,8 @@ func ParseOrderNumber(s string) (int64, error) {
 	}
 
 	if checksum%10 != 0 {
-		return orderNumber, ErrInvalidOrderNumber
+		return ErrInvalidOrderNumber
 	}
 
-	return orderNumber, nil
+	return nil
 }

@@ -17,13 +17,13 @@ type Session struct {
 }
 
 type Accrual struct {
-	OrderNumber int64   `json:"order"`
+	OrderNumber string  `json:"order"`
 	Status      string  `json:"status"`
 	Accrual     float64 `json:"accrual"`
 }
 
 type Order struct {
-	OrderNumber int64
+	OrderNumber string
 	UserID      uint64
 	UploadedAt  time.Time
 	Status      string
@@ -31,7 +31,7 @@ type Order struct {
 }
 
 type Withdrawal struct {
-	OrderNumber int64
+	OrderNumber string
 	Sum         float64
 	ProcessedAt time.Time
 }
@@ -43,15 +43,16 @@ type Service interface {
 	SetSession(ctx context.Context, userID uint64, signKey []byte) error
 	GetSession(ctx context.Context, userID uint64) (*Session, error)
 
-	AddOrder(ctx context.Context, number int64, userID uint64) error
-	GetOrder(ctx context.Context, number int64) (*Order, error)
-	GetOrdersList(ctx context.Context, userID uint64) (*[]Order, error)
+	AddOrder(ctx context.Context, number string, userID uint64) error
+	GetOrder(ctx context.Context, number string) (*Order, error)
+	GetOrders(ctx context.Context, userID uint64) (*[]Order, error)
+
 	GetBalance(ctx context.Context, userID uint64) (float64, float64, error)
 	UpdateBalance(ctx context.Context, userID uint64, bal float64, wth float64) error
-	AddWithdrawal(ctx context.Context, userID uint64, number int64, sum float64) error
+	AddWithdrawal(ctx context.Context, userID uint64, number string, sum float64) error
 	GetUserWithdrawals(ctx context.Context, userID uint64) (*[]Withdrawal, error)
 
-	GetUnprocessedOrder() ([]int64, error)
+	GetUnprocessedOrder() ([]string, error)
 	UpdateOrder(accrual Accrual) (uint64, error)
 	UpdateBalance2(userID uint64, acc float64) error
 }

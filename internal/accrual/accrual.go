@@ -1,7 +1,6 @@
 package accrual
 
 import (
-	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -13,9 +12,9 @@ type Service struct {
 	client      *Client
 	storage     storage.Service
 	tick        *time.Ticker // Тикер запросов к сервису расчета бонусов
-	addChan     chan int64   // Канал добавления номера заказа в список опроса
-	delChan     chan int64
-	orderBuffer map[int64]int64    // Список номеров заказов для опроса в сервисе расчета бонусов
+	addChan     chan string  // Канал добавления номера заказа в список опроса
+	delChan     chan string
+	orderBuffer map[string]string  // Список номеров заказов для опроса в сервисе расчета бонусов
 	resultChan  chan resultChannel // Канал для передачи ошибок
 	resumeChan  chan struct{}      // Канал для сигнала о продолжении опроса
 	stopChan    chan struct{}      // Канал для сигнала о приостановке опроса
@@ -27,9 +26,9 @@ func NewService(str storage.Service, cli *Client) Service {
 		client:      cli,
 		storage:     str,
 		tick:        time.NewTicker(time.Second),
-		orderBuffer: make(map[int64]int64, 0),
-		addChan:     make(chan int64, 1),
-		delChan:     make(chan int64, 1),
+		orderBuffer: make(map[string]string, 0),
+		addChan:     make(chan string, 1),
+		delChan:     make(chan string, 1),
 		resultChan:  make(chan resultChannel, 1),
 		resumeChan:  make(chan struct{}, 1),
 		stopChan:    make(chan struct{}, 1),
@@ -144,7 +143,7 @@ func (s *Service) runScheduler() {
 	for {
 		orders, err := s.storage.GetUnprocessedOrder()
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 		for _, v := range orders {
 			s.addChan <- v

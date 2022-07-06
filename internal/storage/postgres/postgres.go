@@ -78,22 +78,19 @@ func (db *DB) GetSession(ctx context.Context, userID uint64) (*storage.Session, 
 	return session, nil
 }
 
-func (db *DB) AddOrder(ctx context.Context, number int64, userID uint64) error {
+func (db *DB) AddOrder(ctx context.Context, number string, userID uint64) error {
 	query := `INSERT INTO orders (order_number, user_id, status) VALUES ($1, $2, $3)`
-
 	_, err := db.pool.Exec(ctx, query, number, userID, "NEW")
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
-func (db *DB) GetOrder(ctx context.Context, number int64) (*storage.Order, error) {
+func (db *DB) GetOrder(ctx context.Context, number string) (*storage.Order, error) {
 	order := &storage.Order{}
 
 	query := `SELECT order_number, user_id, status, uploaded_at, accrual FROM orders WHERE order_number = $1`
-
 	err := db.pool.QueryRow(ctx, query, number).Scan(
 		&order.OrderNumber,
 		&order.UserID,
@@ -108,26 +105,23 @@ func (db *DB) GetOrder(ctx context.Context, number int64) (*storage.Order, error
 	return order, nil
 }
 
-func (db *DB) GetOrdersList(ctx context.Context, userID uint64) (*[]storage.Order, error) {
-
-	var result []storage.Order
+func (db *DB) GetOrders(ctx context.Context, userID uint64) (*[]storage.Order, error) {
+	var orders []storage.Order
 
 	query := `SELECT user_id, order_number, status, uploaded_at, accrual
 				FROM orders WHERE user_id = $1 order by uploaded_at`
 	rows, err := db.pool.Query(ctx, query, userID)
 	if err != nil {
-		log.Println(err)
-		return &result, err
+		return &orders, err
 	}
 
 	for rows.Next() {
 		var o storage.Order
 		err = rows.Scan(&o.UserID, &o.OrderNumber, &o.Status, &o.UploadedAt, &o.Accrual)
 		if err != nil {
-			log.Println(err)
 			return nil, err
 		}
-		result = append(result, o)
+		orders = append(orders, o)
 	}
 
 	// проверяем на ошибки
@@ -137,7 +131,7 @@ func (db *DB) GetOrdersList(ctx context.Context, userID uint64) (*[]storage.Orde
 		return nil, err
 	}
 
-	return &result, nil
+	return &orders, nil
 }
 
 func (db *DB) GetBalance(ctx context.Context, userID uint64) (float64, float64, error) {
@@ -164,7 +158,7 @@ func (db *DB) UpdateBalance(ctx context.Context, userID uint64, bal float64, wth
 	return nil
 }
 
-func (db *DB) AddWithdrawal(ctx context.Context, userID uint64, number int64, sum float64) error {
+func (db *DB) AddWithdrawal(ctx context.Context, userID uint64, number string, sum float64) error {
 	query := `INSERT INTO withdrawals (user_id, order_number, sum) VALUES ($1, $2, $3)`
 
 	_, err := db.pool.Exec(ctx, query, userID, number, sum)
@@ -206,8 +200,8 @@ func (db *DB) GetUserWithdrawals(ctx context.Context, userID uint64) (*[]storage
 
 }
 
-func (db *DB) GetUnprocessedOrder() ([]int64, error) {
-	var result []int64
+func (db *DB) GetUnprocessedOrder() ([]string, error) {
+	var result []string
 
 	query := `UPDATE orders SET in_buffer = true WHERE status in ('NEW') AND in_buffer = false RETURNING order_number`
 
@@ -217,7 +211,7 @@ func (db *DB) GetUnprocessedOrder() ([]int64, error) {
 	}
 
 	for rows.Next() {
-		var o int64
+		var o string
 		err = rows.Scan(&o)
 		if err != nil {
 			return nil, err

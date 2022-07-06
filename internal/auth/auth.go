@@ -37,7 +37,6 @@ func (a *Service) SignUp(ctx context.Context, username, password string) error {
 	passwordHash := generateHash(password, passwordHashKey)
 
 	userID, err := a.storage.AddUser(ctx, username, passwordHash)
-	fmt.Println(userID)
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 		return ErrUsernameTaken
@@ -72,7 +71,7 @@ func (a *Service) SignIn(ctx context.Context, username, password string) (string
 	}
 
 	// generate user signKey for session token
-	signKey, err := GenerateKey()
+	signKey, err := generateKey()
 	if err != nil {
 		return "", err
 	}

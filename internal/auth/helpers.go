@@ -25,7 +25,7 @@ func generateHash(input string, key string) []byte {
 	return hash
 }
 
-func GenerateKey() ([]byte, error) {
+func generateKey() ([]byte, error) {
 	key := make([]byte, 16)
 	if _, err := rand.Read(key); err != nil {
 		return nil, err

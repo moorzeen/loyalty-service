@@ -25,29 +25,25 @@ func NewService(str storage.Service) Service {
 }
 
 func (o *Service) AddOrder(ctx context.Context, orderNumber string, userID uint64) error {
-	number, err := ParseOrderNumber(orderNumber)
-	if err != nil {
-		log.Println(err)
+
+	if err := parseOrderNumber(orderNumber); err != nil {
 		return ErrInvalidOrderNumber
 	}
 
-	err = o.storage.AddOrder(ctx, number, userID)
+	err := o.storage.AddOrder(ctx, orderNumber, userID)
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-		order, err := o.storage.GetOrder(ctx, number)
+		order, err := o.storage.GetOrder(ctx, orderNumber)
 		if err != nil {
 			return err
 		}
-
 		if order.UserID == userID {
 			return ErrAlreadyAddByThis
 		}
-
 		return ErrAddedByOther
 	}
 
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 
@@ -55,9 +51,8 @@ func (o *Service) AddOrder(ctx context.Context, orderNumber string, userID uint6
 }
 
 func (o *Service) GetOrders(ctx context.Context, userID uint64) (*[]storage.Order, error) {
-	orders, err := o.storage.GetOrdersList(ctx, userID)
+	orders, err := o.storage.GetOrders(ctx, userID)
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 
@@ -76,9 +71,7 @@ func (o *Service) GetBalance(ctx context.Context, userID uint64) (float64, float
 
 func (o *Service) Withdraw(ctx context.Context, request WithdrawRequest) error {
 
-	number, err := ParseOrderNumber(request.OrderNumber)
-	if err != nil {
-		log.Println(err)
+	if err := parseOrderNumber(request.OrderNumber); err != nil {
 		return ErrInvalidOrderNumber
 	}
 
@@ -91,7 +84,7 @@ func (o *Service) Withdraw(ctx context.Context, request WithdrawRequest) error {
 		return ErrInsufficientFunds
 	}
 
-	err = o.storage.AddWithdrawal(ctx, request.UserID, number, request.WithdrawSum)
+	err = o.storage.AddWithdrawal(ctx, request.UserID, request.OrderNumber, request.WithdrawSum)
 	if err != nil {
 		return err
 	}

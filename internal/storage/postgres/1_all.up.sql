@@ -13,7 +13,7 @@ create table SESSIONS
 
 create table ORDERS
 (
-    ORDER_NUMBER bigint unique not null primary key,
+    ORDER_NUMBER text unique not null primary key,
     USER_ID bigserial not null references USERS (ID),
     UPLOADED_AT timestamptz not null default current_timestamp,
     STATUS text not null,
@@ -31,7 +31,7 @@ create table ACCOUNTS
 create table WITHDRAWALS
 (
     USER_ID bigserial not null references USERS (ID),
-    ORDER_NUMBER bigint unique not null,
+    ORDER_NUMBER text unique not null,
     SUM numeric default 0,
     PROCESSED_AT timestamptz not null default current_timestamp
 );
