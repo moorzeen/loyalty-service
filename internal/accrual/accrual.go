@@ -37,6 +37,7 @@ func NewService(str storage.Service, cli *Client) Service {
 
 	go acc.runScheduler()
 	go acc.runManager()
+	go acc.poll()
 
 	return acc
 }
@@ -66,32 +67,21 @@ func (s *Service) runManager() {
 			s.mutex.Unlock()
 			log.Printf("Order %s deleted from buffer", o)
 
-		case <-s.resumeChan:
-			go s.poll()
-			s.tick.Stop()
-
-		case <-s.tick.C:
-			log.Println("Looking for anything in orders buffer...")
-			if len(s.orderBuffer) > 0 {
-				s.tick.Stop()
-				log.Println("There are orders in buffer, looking stopped, polling started")
-				go s.poll()
-			}
 		}
 	}
 }
 
 func (s *Service) poll() {
 	for {
-		if len(s.orderBuffer) == 0 {
-			log.Println("Polling orders buffer is empty, polling stopped")
-			s.tick.Reset(time.Second)
-			return
-		}
-		for _, n := range s.orderBuffer {
-			accrual, getAccrualErr := s.client.GetAccrual(n)
-			s.responseHandler(accrual, getAccrualErr)
-			time.Sleep(time.Second * 1)
+		s.mutex.Lock()
+		buffer := s.orderBuffer
+		s.mutex.Unlock()
+		if len(buffer) > 0 {
+			for _, n := range buffer {
+				accrual, accErr := s.client.GetAccrual(n)
+				s.responseHandler(accrual, accErr)
+				time.Sleep(time.Second * 1)
+			}
 		}
 	}
 }
@@ -134,7 +124,7 @@ func (s *Service) responseHandler(accrual storage.Accrual, accErr error) {
 
 }
 
-// runScheduler – проверяет наличие необработанных заказов в БД
+// runScheduler – проверяет наличие необработанных заказов в БД и посылает их в канал
 func (s *Service) runScheduler() {
 	for {
 		orders, err := s.storage.GetUnprocessedOrder()
