@@ -11,7 +11,7 @@ import (
 
 type Client struct {
 	http.Client
-	RunAddress string
+	Address string
 }
 
 func NewClient(addr string) *Client {
@@ -19,38 +19,35 @@ func NewClient(addr string) *Client {
 	client.Timeout = 1 * time.Second
 
 	return &Client{
-		Client:     client,
-		RunAddress: addr,
+		Client:  client,
+		Address: addr,
 	}
 }
 
 func (c *Client) GetAccrual(orderNumber string) (storage.Accrual, error) {
+	accrual := storage.Accrual{}
 
-	type forParsingJSON struct {
+	type responseJSON struct {
 		OrderNumber string  `json:"order"`
 		Status      string  `json:"status"`
 		Accrual     float64 `json:"accrual"`
 	}
-	JSONStruct := forParsingJSON{}
+	response := responseJSON{}
 
-	acc := storage.Accrual{}
-
-	url := c.RunAddress + "/api/orders/" + orderNumber
-
-	response, err := c.Get(url)
+	resp, err := c.Get(c.Address + "/api/orders/" + orderNumber)
 	if err != nil {
-		return acc, fmt.Errorf("failed request accrual server: %w", err)
+		return accrual, fmt.Errorf("failed request accrual server: %w", err)
 	}
-	defer response.Body.Close()
+	defer resp.Body.Close()
 
-	err = json.NewDecoder(response.Body).Decode(&JSONStruct)
+	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
-		return acc, fmt.Errorf("cannot parse accrual service response: %w", err)
+		return accrual, fmt.Errorf("cannot parse accrual service response: %w", err)
 	}
 
-	acc.OrderNumber = orderNumber
-	acc.Status = JSONStruct.Status
-	acc.Accrual = JSONStruct.Accrual
+	accrual.OrderNumber = response.OrderNumber
+	accrual.Status = response.Status
+	accrual.Accrual = response.Accrual
 
-	return acc, nil
+	return accrual, nil
 }
