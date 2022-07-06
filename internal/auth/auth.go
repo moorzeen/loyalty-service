@@ -56,33 +56,30 @@ func (a *Service) SignUp(ctx context.Context, username, password string) error {
 
 func (a *Service) SignIn(ctx context.Context, username, password string) (string, error) {
 
-	// get user from BD
+	// get user by username from BD
 	user, err := a.storage.GetUser(ctx, username)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", ErrNoUser
 	}
 	if err != nil {
-		log.Println(err)
 		return "", err
 	}
 
-	// compare incoming password with passwordHash from DB
+	// compare hash of entered password with hash from DB
 	passwordHash := generateHash(password, passwordHashKey)
 	if !hmac.Equal(passwordHash, user.PasswordHash) {
-		return "", ErrInvalidUser
+		return "", ErrWrongPassword
 	}
 
 	// generate user signKey for session token
 	signKey, err := GenerateKey()
 	if err != nil {
-		log.Println(err)
 		return "", err
 	}
 
 	// add userID and signKey to session DB table
 	err = a.storage.SetSession(ctx, user.ID, signKey)
 	if err != nil {
-		log.Println(err)
 		return "", err
 	}
 
@@ -95,11 +92,12 @@ func (a *Service) SignIn(ctx context.Context, username, password string) (string
 	return authToken, nil
 }
 
-func (a *Service) TokenCheck(ctx context.Context, authToken string) (uint64, error) {
+func (a *Service) ValidateToken(ctx context.Context, authToken string) (uint64, error) {
 	var (
 		userID uint64
 		sign   []byte
 	)
+
 	_, err := fmt.Sscanf(authToken, "%d|%x", &userID, &sign)
 	if err != nil {
 		log.Printf("failed to parse authentication cookie \"%s\": %s", authToken, err.Error())
@@ -110,7 +108,6 @@ func (a *Service) TokenCheck(ctx context.Context, authToken string) (uint64, err
 		return 0, ErrInvalidAuthToken
 	}
 	if err != nil {
-		log.Println(err)
 		return 0, err
 	}
 

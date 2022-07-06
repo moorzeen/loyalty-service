@@ -11,21 +11,27 @@ import (
 
 func errToStatus(err error) int {
 	switch {
-	case errors.Is(err, auth.ErrShortPassword):
+	case
+		errors.Is(err, auth.ErrShortPassword):
 		return http.StatusBadRequest
-	case errors.Is(err, auth.ErrUsernameTaken) ||
-		errors.Is(err, order.ErrAddedByOther):
+	case
+		errors.Is(err, auth.ErrUsernameTaken) ||
+			errors.Is(err, order.ErrAddedByOther):
 		return http.StatusConflict
-	case errors.Is(err, auth.ErrInvalidUser) ||
-		errors.Is(err, auth.ErrInvalidAuthToken) ||
-		errors.Is(err, auth.ErrNoUser) ||
-		errors.Is(err, auth.ErrWrongPassword):
+	case
+		errors.Is(err, auth.ErrInvalidUser) ||
+			errors.Is(err, auth.ErrInvalidAuthToken) ||
+			errors.Is(err, auth.ErrNoUser) ||
+			errors.Is(err, auth.ErrWrongPassword):
 		return http.StatusUnauthorized
-	case errors.Is(err, order.ErrInvalidOrderNumber):
+	case
+		errors.Is(err, order.ErrInvalidOrderNumber):
 		return http.StatusUnprocessableEntity
-	case errors.Is(err, order.ErrAlreadyAddByThis):
+	case
+		errors.Is(err, order.ErrAlreadyAddByThis):
 		return http.StatusOK
-	case errors.Is(err, order.ErrInsufficientFunds):
+	case
+		errors.Is(err, order.ErrInsufficientFunds):
 		return http.StatusPaymentRequired
 	default:
 		return http.StatusInternalServerError

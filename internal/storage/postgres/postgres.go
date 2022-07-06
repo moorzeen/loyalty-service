@@ -45,78 +45,11 @@ func (db *DB) AddAccount(ctx context.Context, userID uint64) error {
 	return nil
 }
 
-func (db *DB) GetUnprocessedOrder() ([]int64, error) {
-	var result []int64
-
-	query := `UPDATE orders SET in_buffer = true WHERE status in ('NEW') AND in_buffer = false RETURNING order_number`
-
-	rows, err := db.pool.Query(context.Background(), query)
-	if err != nil {
-		return nil, err
-	}
-
-	for rows.Next() {
-		var o int64
-		err = rows.Scan(&o)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, o)
-	}
-
-	// проверяем на ошибки
-	err = rows.Err()
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-func (db *DB) UpdateOrder(accrual storage.Accrual) (uint64, error) {
-	var result uint64
-
-	updateQuery := `UPDATE orders SET status = $1, accrual = $2 WHERE order_number = $3 RETURNING user_id`
-	rows, err := db.pool.Query(context.Background(), updateQuery, accrual.Status, accrual.Accrual, accrual.OrderNumber)
-	if err != nil {
-		return 0, err
-	}
-
-	for rows.Next() {
-		var o uint64
-		err = rows.Scan(&o)
-		if err != nil {
-			return 0, err
-		}
-		result = o
-	}
-
-	// проверяем на ошибки
-	err = rows.Err()
-	if err != nil {
-		return 0, err
-	}
-
-	return result, nil
-}
-func (db *DB) UpdateBalance2(userID uint64, acc float64) error {
-
-	log.Printf("db.UpdateBalance/ userID: %d, acrrual: %f", userID, acc)
-
-	updateQuery := `UPDATE accounts SET balance = balance + $1 WHERE user_id = $2`
-	_, err := db.pool.Exec(context.Background(), updateQuery, acc, userID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (db *DB) GetUser(ctx context.Context, username string) (*storage.User, error) {
 	user := &storage.User{}
 
-	query := `SELECT username, password_hash, id FROM users WHERE username = $1`
-
-	err := db.pool.QueryRow(ctx, query, username).Scan(&user.Username, &user.PasswordHash, &user.ID)
+	query := `SELECT id, username, password_hash, FROM users WHERE username = $1`
+	err := db.pool.QueryRow(ctx, query, username).Scan(&user.ID, &user.Username, &user.PasswordHash)
 	if err != nil {
 		return nil, err
 	}
@@ -126,12 +59,10 @@ func (db *DB) GetUser(ctx context.Context, username string) (*storage.User, erro
 
 func (db *DB) SetSession(ctx context.Context, userID uint64, signKey []byte) error {
 	query := `INSERT INTO sessions (user_id, sign_key) VALUES($1, $2) ON CONFLICT (user_id) DO UPDATE SET sign_key = $2`
-
 	_, err := db.pool.Exec(ctx, query, userID, signKey)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -139,7 +70,6 @@ func (db *DB) GetSession(ctx context.Context, userID uint64) (*storage.Session, 
 	session := &storage.Session{}
 
 	query := `SELECT user_id, sign_key FROM sessions WHERE user_id = $1`
-
 	err := db.pool.QueryRow(ctx, query, userID).Scan(&session.UserID, &session.SignKey)
 	if err != nil {
 		return nil, err
@@ -274,4 +204,70 @@ func (db *DB) GetUserWithdrawals(ctx context.Context, userID uint64) (*[]storage
 
 	return &result, nil
 
+}
+
+func (db *DB) GetUnprocessedOrder() ([]int64, error) {
+	var result []int64
+
+	query := `UPDATE orders SET in_buffer = true WHERE status in ('NEW') AND in_buffer = false RETURNING order_number`
+
+	rows, err := db.pool.Query(context.Background(), query)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var o int64
+		err = rows.Scan(&o)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, o)
+	}
+
+	// проверяем на ошибки
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (db *DB) UpdateOrder(accrual storage.Accrual) (uint64, error) {
+	var result uint64
+
+	updateQuery := `UPDATE orders SET status = $1, accrual = $2 WHERE order_number = $3 RETURNING user_id`
+	rows, err := db.pool.Query(context.Background(), updateQuery, accrual.Status, accrual.Accrual, accrual.OrderNumber)
+	if err != nil {
+		return 0, err
+	}
+
+	for rows.Next() {
+		var o uint64
+		err = rows.Scan(&o)
+		if err != nil {
+			return 0, err
+		}
+		result = o
+	}
+
+	// проверяем на ошибки
+	err = rows.Err()
+	if err != nil {
+		return 0, err
+	}
+
+	return result, nil
+}
+func (db *DB) UpdateBalance2(userID uint64, acc float64) error {
+
+	log.Printf("db.UpdateBalance/ userID: %d, acrrual: %f", userID, acc)
+
+	updateQuery := `UPDATE accounts SET balance = balance + $1 WHERE user_id = $2`
+	_, err := db.pool.Exec(context.Background(), updateQuery, acc, userID)
+	if err != nil {
+		return err
+	}
+	return nil
 }
