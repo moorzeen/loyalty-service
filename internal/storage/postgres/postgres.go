@@ -48,7 +48,7 @@ func (db *DB) AddAccount(ctx context.Context, userID uint64) error {
 func (db *DB) GetUser(ctx context.Context, username string) (*storage.User, error) {
 	user := &storage.User{}
 
-	query := `SELECT id, username, password_hash, FROM users WHERE username = $1`
+	query := `SELECT id, username, password_hash FROM users WHERE username = $1`
 	err := db.pool.QueryRow(ctx, query, username).Scan(&user.ID, &user.Username, &user.PasswordHash)
 	if err != nil {
 		return nil, err
