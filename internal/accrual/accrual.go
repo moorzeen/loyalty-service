@@ -64,7 +64,7 @@ func (s *Service) poll() {
 			for _, n := range buffer {
 				accrual, accErr := s.client.GetAccrual(n)
 				s.responseHandler(accrual, accErr)
-				//time.Sleep(time.Second * 1)
+				time.Sleep(time.Second * 1)
 			}
 		}
 	}
