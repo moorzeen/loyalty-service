@@ -59,13 +59,13 @@ func (s *Service) runManager() {
 			s.mutex.Lock()
 			s.orderBuffer[o] = o
 			s.mutex.Unlock()
-			log.Printf("Order %d added to buffer", o)
+			log.Printf("Order %s added to buffer", o)
 
 		case o := <-s.delChan:
 			s.mutex.Lock()
 			delete(s.orderBuffer, o)
 			s.mutex.Unlock()
-			log.Printf("Order %d deleted from buffer", o)
+			log.Printf("Order %s deleted from buffer", o)
 
 		case <-s.resumeChan:
 			go s.poll()
