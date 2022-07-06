@@ -12,11 +12,6 @@ import (
 	"github.com/moorzeen/loyalty-service/internal/order"
 )
 
-type credentials struct {
-	Username string `json:"login"`
-	Password string `json:"password"`
-}
-
 func (ls *LoyaltyServer) register(w http.ResponseWriter, r *http.Request) {
 	contentType := r.Header.Get("Content-Type")
 	if contentType != "application/json" {
@@ -26,7 +21,7 @@ func (ls *LoyaltyServer) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cred := credentials{}
+	cred := auth.Credentials{}
 
 	err := json.NewDecoder(r.Body).Decode(&cred)
 	if err != nil {
@@ -43,7 +38,7 @@ func (ls *LoyaltyServer) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = ls.auth.SignUp(r.Context(), cred.Username, cred.Password)
+	err = ls.auth.SignUp(r.Context(), cred)
 	if err != nil {
 		msg := fmt.Sprintf("Can't regitser: %s", err)
 		log.Println(msg)
@@ -63,7 +58,7 @@ func (ls *LoyaltyServer) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cred := credentials{}
+	cred := auth.Credentials{}
 
 	err := json.NewDecoder(r.Body).Decode(&cred)
 	if err != nil {
@@ -80,7 +75,7 @@ func (ls *LoyaltyServer) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authToken, err := ls.auth.SignIn(r.Context(), cred.Username, cred.Password)
+	authToken, err := ls.auth.SignIn(r.Context(), cred)
 	if err != nil {
 		msg := fmt.Sprintf("Can not login: %s", err)
 		log.Println(msg)
@@ -136,23 +131,21 @@ func (ls *LoyaltyServer) getOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type responseJSON struct {
-		Number     string    `json:"number"`
-		Status     string    `json:"status"`
-		Accrual    float64   `json:"accrual,omitempty"`
-		UploadedAt time.Time `json:"uploaded_at"`
-	}
-
-	result := make([]responseJSON, 0)
-
-	for _, v := range *orders {
-		newItem := responseJSON{v.OrderNumber, v.Status, v.Accrual, v.UploadedAt}
-		result = append(result, newItem)
-	}
-
-	if len(result) == 0 {
+	if len(*orders) == 0 {
 		w.WriteHeader(http.StatusNoContent)
 		return
+	}
+
+	result := make([]order.Order, 0)
+
+	for _, v := range *orders {
+		item := order.Order{
+			Number:     v.OrderNumber,
+			Status:     v.Status,
+			Accrual:    v.Accrual,
+			UploadedAt: v.UploadedAt,
+		}
+		result = append(result, item)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -181,10 +174,7 @@ func (ls *LoyaltyServer) getBalance(w http.ResponseWriter, r *http.Request) {
 		Withdrawn float64 `json:"withdrawn"`
 	}
 
-	result := responseJSON{
-		Balance:   bal,
-		Withdrawn: wtn,
-	}
+	result := responseJSON{bal, wtn}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -205,7 +195,7 @@ func (ls *LoyaltyServer) withdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wr := order.WithdrawRequest{}
+	wr := order.Withdraw{}
 
 	err := json.NewDecoder(r.Body).Decode(&wr)
 	if err != nil {

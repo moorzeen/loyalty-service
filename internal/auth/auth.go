@@ -20,6 +20,11 @@ const (
 	UserAuthCookieName = "authToken"
 )
 
+type Credentials struct {
+	Username string `json:"login"`
+	Password string `json:"password"`
+}
+
 type Service struct {
 	storage storage.Service
 }
@@ -28,15 +33,15 @@ func NewService(str storage.Service) Service {
 	return Service{storage: str}
 }
 
-func (a *Service) SignUp(ctx context.Context, username, password string) error {
+func (a *Service) SignUp(ctx context.Context, cred Credentials) error {
 
-	if err := passComplexity(password); err != nil {
+	if err := passComplexity(cred.Password); err != nil {
 		return ErrShortPassword
 	}
 
-	passwordHash := generateHash(password, passwordHashKey)
+	passwordHash := generateHash(cred.Password, passwordHashKey)
 
-	userID, err := a.storage.AddUser(ctx, username, passwordHash)
+	userID, err := a.storage.AddUser(ctx, cred.Username, passwordHash)
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 		return ErrUsernameTaken
@@ -53,10 +58,10 @@ func (a *Service) SignUp(ctx context.Context, username, password string) error {
 	return nil
 }
 
-func (a *Service) SignIn(ctx context.Context, username, password string) (string, error) {
+func (a *Service) SignIn(ctx context.Context, cred Credentials) (string, error) {
 
 	// get user by username from BD
-	user, err := a.storage.GetUser(ctx, username)
+	user, err := a.storage.GetUser(ctx, cred.Username)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", ErrNoUser
 	}
@@ -65,7 +70,7 @@ func (a *Service) SignIn(ctx context.Context, username, password string) (string
 	}
 
 	// compare hash of entered password with hash from DB
-	passwordHash := generateHash(password, passwordHashKey)
+	passwordHash := generateHash(cred.Password, passwordHashKey)
 	if !hmac.Equal(passwordHash, user.PasswordHash) {
 		return "", ErrWrongPassword
 	}

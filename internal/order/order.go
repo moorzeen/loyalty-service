@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
@@ -14,7 +15,14 @@ type Service struct {
 	storage storage.Service
 }
 
-type WithdrawRequest struct {
+type Order struct {
+	Number     string    `json:"number"`
+	Status     string    `json:"status"`
+	Accrual    float64   `json:"accrual,omitempty"`
+	UploadedAt time.Time `json:"uploaded_at"`
+}
+
+type Withdraw struct {
 	UserID      uint64
 	OrderNumber string  `json:"order"`
 	WithdrawSum float64 `json:"sum"`
@@ -62,14 +70,13 @@ func (o *Service) GetOrders(ctx context.Context, userID uint64) (*[]storage.Orde
 func (o *Service) GetBalance(ctx context.Context, userID uint64) (float64, float64, error) {
 	bal, wtn, err := o.storage.GetBalance(ctx, userID)
 	if err != nil {
-		log.Println(err)
 		return 0, 0, err
 	}
 
 	return bal, wtn, nil
 }
 
-func (o *Service) Withdraw(ctx context.Context, request WithdrawRequest) error {
+func (o *Service) Withdraw(ctx context.Context, request Withdraw) error {
 
 	if err := parseOrderNumber(request.OrderNumber); err != nil {
 		return ErrInvalidOrderNumber

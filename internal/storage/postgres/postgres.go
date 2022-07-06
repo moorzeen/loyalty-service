@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/moorzeen/loyalty-service/internal/storage"
 )
@@ -112,7 +111,7 @@ func (db *DB) GetOrders(ctx context.Context, userID uint64) (*[]storage.Order, e
 				FROM orders WHERE user_id = $1 order by uploaded_at`
 	rows, err := db.pool.Query(ctx, query, userID)
 	if err != nil {
-		return &orders, err
+		return nil, err
 	}
 
 	for rows.Next() {
@@ -127,7 +126,6 @@ func (db *DB) GetOrders(ctx context.Context, userID uint64) (*[]storage.Order, e
 	// проверяем на ошибки
 	err = rows.Err()
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 
@@ -139,9 +137,6 @@ func (db *DB) GetBalance(ctx context.Context, userID uint64) (float64, float64, 
 
 	balQuery := `SELECT balance, withdrawn FROM accounts WHERE user_id = $1`
 	err := db.pool.QueryRow(ctx, balQuery, userID).Scan(&bal, &wtn)
-	if err == pgx.ErrNoRows {
-		return 0, 0, nil
-	}
 	if err != nil {
 		return 0, 0, err
 	}
