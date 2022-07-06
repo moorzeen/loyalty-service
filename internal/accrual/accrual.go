@@ -11,10 +11,10 @@ import (
 type Service struct {
 	client      *Client
 	storage     storage.Service
-	tick        *time.Ticker // Тикер запросов к сервису расчета бонусов
-	addChan     chan string  // Канал добавления номера заказа в список опроса
-	delChan     chan string
-	orderBuffer map[string]string  // Список номеров заказов для опроса в сервисе расчета бонусов
+	tick        *time.Ticker       // Тикер для проверки новых заказов в БД
+	addChan     chan string        // Канал добавления номера заказа в список обработки
+	delChan     chan string        // Канал удаления номера заказа из списка обработки
+	orderBuffer map[string]string  // Буфер заказов для обработки
 	resultChan  chan resultChannel // Канал для передачи ошибок
 	resumeChan  chan struct{}      // Канал для сигнала о продолжении опроса
 	stopChan    chan struct{}      // Канал для сигнала о приостановке опроса
@@ -37,7 +37,6 @@ func NewService(str storage.Service, cli *Client) Service {
 
 	go acc.runScheduler()
 	go acc.runManager()
-	//go acc.runDeleter()
 
 	return acc
 }
@@ -135,109 +134,21 @@ func (s *Service) responseHandler(accrual storage.Accrual, accErr error) {
 
 }
 
-/*
-С какой-то периодичностью опрашиваем БД на наличие необработанных номеров заказов.
-Если такой номер заказа есть, кидаем его в канал и помечаем в БД взятым в обработку
-*/
+// runScheduler – проверяет наличие необработанных заказов в БД
 func (s *Service) runScheduler() {
 	for {
 		orders, err := s.storage.GetUnprocessedOrder()
 		if err != nil {
 			log.Println(err)
 		}
+
 		for _, v := range orders {
 			s.addChan <- v
 		}
 		time.Sleep(time.Second * 1)
 	}
-
-	/* for debugging
-	time.Sleep(time.Second * 10)
-	s.addChan <- orderNumber
-	time.Sleep(time.Second * 10)
-	s.addChan <- orderNumber + 10
-	*/
-
-}
-
-//func (s *Service) runDeleter() {
-//	var orderNumber int64 = 370
-//
-//	time.Sleep(time.Second * 30)
-//	s.delChan <- orderNumber
-//	s.delChan <- orderNumber + 10
-//}
-
-func (s *Service) resume() {
-	s.resumeChan <- struct{}{}
-}
-
-/*
-func (s *Service) run() {
-	log.Println("DEBUG: starting Accrual service goroutine")
-	s.updateAccrual()
-
-	for {
-		select {
-		case res := <-s.errChan:
-			tooMayRequests := &model.ErrTooManyRequests{}
-			if errors.Is(res, storage.ErrNoOrders) {
-				log.Println("No orders to process, waiting...")
-				time.AfterFunc(1*time.Second, s.resume)
-			} else if errors.As(res, &tooMayRequests) {
-				log.Println("Too many requests, waiting...")
-				time.AfterFunc(tooMayRequests.RetryAfter, s.resume)
-			} else if res != nil {
-				log.Printf("Could not process order: %s", res.Error())
-				s.updateAccrual()
-			} else {
-				s.updateAccrual()
-			}
-		case <-s.resumeChan:
-			s.updateAccrual()
-		case <-s.stopChan:
-			log.Println("Stopping Accruals service...")
-			close(s.stopChan)
-			return
-		}
-	}
-}
-
-func (s *Service) updateAccrual() {
-
-	// берем из БД заказ, удовлетворяющий условию необработанного
-	// если такого нет, то возвращаем ошибку в канал
-	// делаем запрос к стороннему сервису, чтобы получить начисление
-	// если ошибка, то возвращаем ее
-	// обновляем в нашей БД запись
-
-	orderID, errStorage := s.storage.NextOrder()
-	if errStorage != nil {
-		err := fmt.Errorf("cannot get order for accrual because of DB: %w", errStorage)
-		s.errChan <- err
-		return
-	}
-
-	accrual, errClient := s.client.GetAccrual(orderID)
-	if errClient != nil {
-		err := fmt.Errorf("cannot get order for accrual because of service: %w", errClient)
-		s.errChan <- err
-		return
-	}
-
-	if errApply := s.storage.ApplyAccrual(accrual); errApply != nil {
-		err := fmt.Errorf("cannot process apply accrual to order: %w", errApply)
-		s.errChan <- err
-		return
-	}
 }
 
 func (s *Service) resume() {
 	s.resumeChan <- struct{}{}
 }
-
-func (s *Service) Stop() {
-	s.stopChan <- struct{}{}
-	<-s.stopChan
-}
-*/
