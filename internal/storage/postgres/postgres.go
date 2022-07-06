@@ -114,6 +114,11 @@ func (db *DB) GetOrders(ctx context.Context, userID uint64) (*[]storage.Order, e
 		return nil, err
 	}
 
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
 	for rows.Next() {
 		var o storage.Order
 		err = rows.Scan(&o.UserID, &o.OrderNumber, &o.Status, &o.UploadedAt, &o.Accrual)
@@ -121,12 +126,6 @@ func (db *DB) GetOrders(ctx context.Context, userID uint64) (*[]storage.Order, e
 			return nil, err
 		}
 		orders = append(orders, o)
-	}
-
-	// проверяем на ошибки
-	err = rows.Err()
-	if err != nil {
-		return nil, err
 	}
 
 	return &orders, nil
@@ -144,6 +143,15 @@ func (db *DB) GetBalance(ctx context.Context, userID uint64) (float64, float64, 
 	return bal, wtn, nil
 }
 
+func (db *DB) AddWithdrawal(ctx context.Context, userID uint64, number string, sum float64) error {
+	query := `INSERT INTO withdrawals (user_id, order_number, sum) VALUES ($1, $2, $3)`
+	_, err := db.pool.Exec(ctx, query, userID, number, sum)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (db *DB) UpdateBalance(ctx context.Context, userID uint64, bal float64, wth float64) error {
 	updateQuery := `UPDATE accounts SET balance = $1, withdrawn = $2 WHERE user_id = $3`
 	_, err := db.pool.Exec(ctx, updateQuery, bal, wth, userID)
@@ -153,42 +161,27 @@ func (db *DB) UpdateBalance(ctx context.Context, userID uint64, bal float64, wth
 	return nil
 }
 
-func (db *DB) AddWithdrawal(ctx context.Context, userID uint64, number string, sum float64) error {
-	query := `INSERT INTO withdrawals (user_id, order_number, sum) VALUES ($1, $2, $3)`
-
-	_, err := db.pool.Exec(ctx, query, userID, number, sum)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (db *DB) GetUserWithdrawals(ctx context.Context, userID uint64) (*[]storage.Withdrawal, error) {
 	var result []storage.Withdrawal
 
 	query := `SELECT order_number, sum, processed_at FROM withdrawals WHERE user_id = $1 order by processed_at`
 	rows, err := db.pool.Query(ctx, query, userID)
 	if err != nil {
-		log.Println(err)
 		return &result, err
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
 	}
 
 	for rows.Next() {
 		var o storage.Withdrawal
 		err = rows.Scan(&o.OrderNumber, &o.Sum, &o.ProcessedAt)
 		if err != nil {
-			log.Println(err)
 			return nil, err
 		}
 		result = append(result, o)
-	}
-
-	// проверяем на ошибки
-	err = rows.Err()
-	if err != nil {
-		log.Println(err)
-		return nil, err
 	}
 
 	return &result, nil
@@ -205,6 +198,11 @@ func (db *DB) GetUnprocessedOrder() ([]string, error) {
 		return nil, err
 	}
 
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
 	for rows.Next() {
 		var o string
 		err = rows.Scan(&o)
@@ -212,12 +210,6 @@ func (db *DB) GetUnprocessedOrder() ([]string, error) {
 			return nil, err
 		}
 		result = append(result, o)
-	}
-
-	// проверяем на ошибки
-	err = rows.Err()
-	if err != nil {
-		return nil, err
 	}
 
 	return result, nil
@@ -232,6 +224,11 @@ func (db *DB) UpdateOrder(accrual storage.Accrual) (uint64, error) {
 		return 0, err
 	}
 
+	err = rows.Err()
+	if err != nil {
+		return 0, err
+	}
+
 	for rows.Next() {
 		var o uint64
 		err = rows.Scan(&o)
@@ -239,12 +236,6 @@ func (db *DB) UpdateOrder(accrual storage.Accrual) (uint64, error) {
 			return 0, err
 		}
 		result = o
-	}
-
-	// проверяем на ошибки
-	err = rows.Err()
-	if err != nil {
-		return 0, err
 	}
 
 	return result, nil

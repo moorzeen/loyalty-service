@@ -3,7 +3,6 @@ package order
 import (
 	"context"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/jackc/pgconn"
@@ -20,6 +19,11 @@ type Order struct {
 	Status     string    `json:"status"`
 	Accrual    float64   `json:"accrual,omitempty"`
 	UploadedAt time.Time `json:"uploaded_at"`
+}
+
+type Balance struct {
+	Balance   float64 `json:"current"`
+	Withdrawn float64 `json:"withdrawn"`
 }
 
 type Withdraw struct {
@@ -110,11 +114,7 @@ func (o *Service) Withdraw(ctx context.Context, request Withdraw) error {
 func (o *Service) GetWithdrawals(ctx context.Context, userID uint64) (*[]storage.Withdrawal, error) {
 	withdrawals, err := o.storage.GetUserWithdrawals(ctx, userID)
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
-
-	log.Println(withdrawals)
-
 	return withdrawals, nil
 }

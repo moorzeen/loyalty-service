@@ -169,12 +169,10 @@ func (ls *LoyaltyServer) getBalance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type responseJSON struct {
-		Balance   float64 `json:"current"`
-		Withdrawn float64 `json:"withdrawn"`
+	result := order.Balance{
+		Balance:   bal,
+		Withdrawn: wtn,
 	}
-
-	result := responseJSON{bal, wtn}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -242,8 +240,6 @@ func (ls *LoyaltyServer) getWithdrawals(w http.ResponseWriter, r *http.Request) 
 		item := responseJSON{v.OrderNumber, v.Sum, v.ProcessedAt}
 		result = append(result, item)
 	}
-
-	log.Printf("problem: %v", result)
 
 	if len(result) == 0 {
 		w.WriteHeader(http.StatusNoContent)
