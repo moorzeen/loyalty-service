@@ -23,10 +23,32 @@ func NewStorage(ctx context.Context, link string) (storage.Service, error) {
 	return &DB{pool: pool}, nil
 }
 
+func (db *DB) AddUser(ctx context.Context, username string, passwordHash []byte) (uint64, error) {
+	var userID uint64
+
+	query := `INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id`
+	err := db.pool.QueryRow(ctx, query, username, passwordHash).Scan(&userID)
+	if err != nil {
+		return 0, err
+	}
+
+	return userID, nil
+}
+
+func (db *DB) AddAccount(ctx context.Context, userID uint64) error {
+	query := `INSERT INTO accounts (user_id) VALUES ($1)`
+	_, err := db.pool.Exec(ctx, query, userID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *DB) GetUnprocessedOrder() ([]int64, error) {
 	var result []int64
 
-	query := `UPDATE user_orders SET in_buffer = true WHERE status in ('NEW') AND in_buffer = false RETURNING order_number`
+	query := `UPDATE orders SET in_buffer = true WHERE status in ('NEW') AND in_buffer = false RETURNING order_number`
 
 	rows, err := db.pool.Query(context.Background(), query)
 	if err != nil {
@@ -54,7 +76,7 @@ func (db *DB) GetUnprocessedOrder() ([]int64, error) {
 func (db *DB) UpdateOrder(accrual storage.Accrual) (uint64, error) {
 	var result uint64
 
-	updateQuery := `UPDATE user_orders SET status = $1, accrual = $2 WHERE order_number = $3 RETURNING user_id`
+	updateQuery := `UPDATE orders SET status = $1, accrual = $2 WHERE order_number = $3 RETURNING user_id`
 	rows, err := db.pool.Query(context.Background(), updateQuery, accrual.Status, accrual.Accrual, accrual.OrderNumber)
 	if err != nil {
 		return 0, err
@@ -89,28 +111,6 @@ func (db *DB) UpdateBalance2(userID uint64, acc float64) error {
 	return nil
 }
 
-func (db *DB) AddUser(ctx context.Context, username string, passwordHash []byte) error {
-	query := `INSERT INTO users (username, password_hash) VALUES ($1, $2)`
-
-	_, err := db.pool.Exec(ctx, query, username, passwordHash)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (db *DB) AddAccount(ctx context.Context, userID uint64) error {
-	query := `INSERT INTO accounts (user_id, balance, withdrawn) VALUES ($1, $2, $3)`
-
-	_, err := db.pool.Exec(ctx, query, userID, 0, 0)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (db *DB) GetUser(ctx context.Context, username string) (*storage.User, error) {
 	user := &storage.User{}
 
@@ -125,7 +125,7 @@ func (db *DB) GetUser(ctx context.Context, username string) (*storage.User, erro
 }
 
 func (db *DB) SetSession(ctx context.Context, userID uint64, signKey []byte) error {
-	query := `INSERT INTO user_sessions (user_id, sign_key) VALUES($1, $2) ON CONFLICT (user_id) DO UPDATE SET sign_key = $2`
+	query := `INSERT INTO sessions (user_id, sign_key) VALUES($1, $2) ON CONFLICT (user_id) DO UPDATE SET sign_key = $2`
 
 	_, err := db.pool.Exec(ctx, query, userID, signKey)
 	if err != nil {
@@ -138,7 +138,7 @@ func (db *DB) SetSession(ctx context.Context, userID uint64, signKey []byte) err
 func (db *DB) GetSession(ctx context.Context, userID uint64) (*storage.Session, error) {
 	session := &storage.Session{}
 
-	query := `SELECT user_id, sign_key FROM user_sessions WHERE user_id = $1`
+	query := `SELECT user_id, sign_key FROM sessions WHERE user_id = $1`
 
 	err := db.pool.QueryRow(ctx, query, userID).Scan(&session.UserID, &session.SignKey)
 	if err != nil {
@@ -149,7 +149,7 @@ func (db *DB) GetSession(ctx context.Context, userID uint64) (*storage.Session, 
 }
 
 func (db *DB) AddOrder(ctx context.Context, number int64, userID uint64) error {
-	query := `INSERT INTO user_orders (order_number, user_id, status) VALUES ($1, $2, $3)`
+	query := `INSERT INTO orders (order_number, user_id, status) VALUES ($1, $2, $3)`
 
 	_, err := db.pool.Exec(ctx, query, number, userID, "NEW")
 	if err != nil {
@@ -162,7 +162,7 @@ func (db *DB) AddOrder(ctx context.Context, number int64, userID uint64) error {
 func (db *DB) GetOrder(ctx context.Context, number int64) (*storage.Order, error) {
 	order := &storage.Order{}
 
-	query := `SELECT order_number, user_id, status, uploaded_at, accrual FROM user_orders WHERE order_number = $1`
+	query := `SELECT order_number, user_id, status, uploaded_at, accrual FROM orders WHERE order_number = $1`
 
 	err := db.pool.QueryRow(ctx, query, number).Scan(
 		&order.OrderNumber,
@@ -183,7 +183,7 @@ func (db *DB) GetOrdersList(ctx context.Context, userID uint64) (*[]storage.Orde
 	var result []storage.Order
 
 	query := `SELECT user_id, order_number, status, uploaded_at, accrual
-				FROM user_orders WHERE user_id = $1 order by uploaded_at`
+				FROM orders WHERE user_id = $1 order by uploaded_at`
 	rows, err := db.pool.Query(ctx, query, userID)
 	if err != nil {
 		log.Println(err)

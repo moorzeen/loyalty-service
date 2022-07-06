@@ -5,13 +5,13 @@ create table USERS
     PASSWORD_HASH bytea not null
 );
 
-create table USER_SESSIONS
+create table SESSIONS
 (
     USER_ID bigserial unique not null references USERS (ID),
     SIGN_KEY bytea not null
 );
 
-create table USER_ORDERS
+create table ORDERS
 (
     ORDER_NUMBER bigint unique not null primary key,
     USER_ID bigserial not null references USERS (ID),

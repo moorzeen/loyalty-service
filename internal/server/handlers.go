@@ -31,14 +31,14 @@ func (ls *LoyaltyServer) register(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&cred)
 	if err != nil {
-		msg := fmt.Sprintf("Failed to parse login/password: %s", err)
+		msg := fmt.Sprintf("Failed to parse login or password: %s", err)
 		log.Println(msg)
 		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
 
 	if cred.Username == "" || cred.Password == "" {
-		msg := "Empty login or password not allowed"
+		msg := "Empty login or password is not allowed"
 		log.Println(msg)
 		http.Error(w, msg, http.StatusBadRequest)
 		return
@@ -68,14 +68,14 @@ func (ls *LoyaltyServer) login(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&cred)
 	if err != nil {
-		msg := fmt.Sprintf("Failed to parse login/password: %s", err)
+		msg := fmt.Sprintf("Failed to parse login or password: %s", err)
 		log.Println(msg)
 		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
 
 	if cred.Username == "" || cred.Password == "" {
-		msg := "Empty login/password not allowed"
+		msg := "Empty login or password"
 		log.Println(msg)
 		http.Error(w, msg, http.StatusBadRequest)
 		return

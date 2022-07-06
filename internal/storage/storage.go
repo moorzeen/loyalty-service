@@ -37,11 +37,12 @@ type Withdrawal struct {
 }
 
 type Service interface {
-	AddUser(ctx context.Context, username string, passwordHash []byte) error
+	AddUser(ctx context.Context, username string, passwordHash []byte) (uint64, error)
+	AddAccount(ctx context.Context, userID uint64) error
+
 	GetUser(ctx context.Context, username string) (*User, error)
 	SetSession(ctx context.Context, userID uint64, signKey []byte) error
 	GetSession(ctx context.Context, userID uint64) (*Session, error)
-	AddAccount(ctx context.Context, userID uint64) error
 
 	AddOrder(ctx context.Context, number int64, userID uint64) error
 	GetOrder(ctx context.Context, number int64) (*Order, error)

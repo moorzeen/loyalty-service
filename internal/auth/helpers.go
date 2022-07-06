@@ -7,17 +7,18 @@ import (
 	"errors"
 )
 
-func PassComplexity(pass string) error {
+func passComplexity(pass string) error {
 	if len([]rune(pass)) < 8 {
 		return errors.New("required at least 8 characters")
 	}
 	return nil
 }
 
-func GenerateHash(input string, key []byte) []byte {
+func generateHash(input string, key string) []byte {
 	data := []byte(input)
+	signKey := []byte(key)
 
-	h := hmac.New(sha256.New, key)
+	h := hmac.New(sha256.New, signKey)
 	h.Write(data)
 	hash := h.Sum(nil)
 

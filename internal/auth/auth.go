@@ -29,28 +29,24 @@ func NewService(str storage.Service) Service {
 }
 
 func (a *Service) SignUp(ctx context.Context, username, password string) error {
-	if err := PassComplexity(password); err != nil {
+
+	if err := passComplexity(password); err != nil {
 		return ErrShortPassword
 	}
 
-	passwordHash := GenerateHash(password, []byte(passwordHashKey))
+	passwordHash := generateHash(password, passwordHashKey)
 
-	err := a.storage.AddUser(ctx, username, passwordHash)
+	userID, err := a.storage.AddUser(ctx, username, passwordHash)
+	fmt.Println(userID)
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 		return ErrUsernameTaken
 	}
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 
-	userinfo, err := a.storage.GetUser(ctx, username)
-	if err != nil {
-		return err
-	}
-
-	err = a.storage.AddAccount(ctx, userinfo.ID)
+	err = a.storage.AddAccount(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -71,7 +67,7 @@ func (a *Service) SignIn(ctx context.Context, username, password string) (string
 	}
 
 	// compare incoming password with passwordHash from DB
-	passwordHash := GenerateHash(password, []byte(passwordHashKey))
+	passwordHash := generateHash(password, passwordHashKey)
 	if !hmac.Equal(passwordHash, user.PasswordHash) {
 		return "", ErrInvalidUser
 	}
@@ -91,7 +87,7 @@ func (a *Service) SignIn(ctx context.Context, username, password string) (string
 	}
 
 	// generate userID signature
-	sign := GenerateHash(strconv.FormatUint(user.ID, 10), signKey)
+	sign := generateHash(strconv.FormatUint(user.ID, 10), string(signKey))
 
 	// make authToken
 	authToken := fmt.Sprintf("%d|%x", user.ID, sign)
@@ -118,7 +114,7 @@ func (a *Service) TokenCheck(ctx context.Context, authToken string) (uint64, err
 		return 0, err
 	}
 
-	if !bytes.Equal(sign, GenerateHash(strconv.FormatUint(userID, 10), session.SignKey)) {
+	if !bytes.Equal(sign, generateHash(strconv.FormatUint(userID, 10), string(session.SignKey))) {
 		return 0, ErrInvalidAuthToken
 	}
 
