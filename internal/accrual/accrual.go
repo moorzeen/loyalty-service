@@ -73,28 +73,29 @@ func (s *Service) poll() {
 func (s *Service) responseHandler(accrual storage.Accrual, accErr error) {
 	if accErr != nil {
 		log.Println(accErr)
+		return
 	}
 
 	if accrual.Status == "PROCESSED" {
-		log.Println(accrual)
-
 		userID, err := s.storage.UpdateOrder(accrual)
 		if err != nil {
 			log.Println(err)
+			return
 		}
 
-		err = s.storage.UpdateBalance2(userID, accrual.Accrual)
+		err = s.storage.Accrual(userID, accrual.Accrual)
 		if err != nil {
 			log.Println(err)
+			return
 		}
 		s.delChan <- accrual.OrderNumber
 	}
 
 	if accrual.Status == "INVALID" {
-		// здесь нужно обновить ордера и баланс аккаунта в базе
 		_, err := s.storage.UpdateOrder(accrual)
 		if err != nil {
 			log.Println(err)
+			return
 		}
 		s.delChan <- accrual.OrderNumber
 	}
@@ -103,9 +104,9 @@ func (s *Service) responseHandler(accrual storage.Accrual, accErr error) {
 		_, err := s.storage.UpdateOrder(accrual)
 		if err != nil {
 			log.Println(err)
+			return
 		}
 	}
-
 }
 
 // runScheduler – проверяет наличие необработанных заказов в БД и посылает их в канал

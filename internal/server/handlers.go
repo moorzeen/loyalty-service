@@ -227,8 +227,6 @@ func (ls *LoyaltyServer) getWithdrawals(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	log.Printf("some problem: %v", withdrawals)
-
 	type responseJSON struct {
 		Number     string    `json:"order"`
 		Sum        float64   `json:"sum"`

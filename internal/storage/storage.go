@@ -53,5 +53,5 @@ type Service interface {
 
 	GetUnprocessedOrder() ([]string, error)
 	UpdateOrder(accrual Accrual) (uint64, error)
-	UpdateBalance2(userID uint64, acc float64) error
+	Accrual(userID uint64, acc float64) error
 }

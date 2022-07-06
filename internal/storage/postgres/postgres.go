@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/moorzeen/loyalty-service/internal/storage"
@@ -189,10 +188,9 @@ func (db *DB) GetUserWithdrawals(ctx context.Context, userID uint64) (*[]storage
 }
 
 func (db *DB) GetUnprocessedOrder() ([]string, error) {
-	var result []string
+	var orders []string
 
-	query := `UPDATE orders SET in_buffer = true WHERE status in ('NEW') AND in_buffer = false RETURNING order_number`
-
+	query := `UPDATE orders SET status = 'PROCESSING' WHERE status = 'NEW' RETURNING order_number`
 	rows, err := db.pool.Query(context.Background(), query)
 	if err != nil {
 		return nil, err
@@ -209,10 +207,10 @@ func (db *DB) GetUnprocessedOrder() ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, o)
+		orders = append(orders, o)
 	}
 
-	return result, nil
+	return orders, nil
 }
 
 func (db *DB) UpdateOrder(accrual storage.Accrual) (uint64, error) {
@@ -240,10 +238,7 @@ func (db *DB) UpdateOrder(accrual storage.Accrual) (uint64, error) {
 
 	return result, nil
 }
-func (db *DB) UpdateBalance2(userID uint64, acc float64) error {
-
-	log.Printf("db.UpdateBalance/ userID: %d, acrrual: %f", userID, acc)
-
+func (db *DB) Accrual(userID uint64, acc float64) error {
 	updateQuery := `UPDATE accounts SET balance = balance + $1 WHERE user_id = $2`
 	_, err := db.pool.Exec(context.Background(), updateQuery, acc, userID)
 	if err != nil {
