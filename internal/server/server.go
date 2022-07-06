@@ -24,7 +24,7 @@ func NewServer(cfg *Config) (*LoyaltyServer, error) {
 
 	storage, err := postgres.NewStorage(cfg.DatabaseURI)
 	if err != nil {
-
+		return nil, err
 	}
 
 	srv := &LoyaltyServer{}
