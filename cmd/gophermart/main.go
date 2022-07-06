@@ -5,7 +5,8 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/moorzeen/loyalty-service/server"
+	"github.com/moorzeen/loyalty-service/internal/server"
+	"github.com/moorzeen/loyalty-service/internal/storage/postgres"
 )
 
 func main() {
@@ -15,10 +16,10 @@ func main() {
 	}
 
 	log.Printf(
-		"Got configuration:\n- run address: %s\n- database URI: %s\n- accrual system address: %s\n",
+		"Configuration:\n- run address: %s\n- database URI: %s\n- accrual system address: %s\n",
 		cfg.RunAddress, cfg.DatabaseURI, cfg.AccrualSystemAddress)
 
-	err = server.DBmigration(cfg.DatabaseURI)
+	err = postgres.Migration(cfg.DatabaseURI)
 	if err != nil {
 		log.Fatalf("Failed to migrate DB: %s", err)
 	}

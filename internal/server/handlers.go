@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/moorzeen/loyalty-service/services/auth"
-	"github.com/moorzeen/loyalty-service/services/order"
+	"github.com/moorzeen/loyalty-service/internal/auth"
+	"github.com/moorzeen/loyalty-service/internal/order"
 )
 
 type credentials struct {

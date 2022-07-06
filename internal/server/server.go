@@ -1,21 +1,15 @@
 package server
 
 import (
-	"context"
-	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/moorzeen/loyalty-service/services/accrual"
-	accrualPG "github.com/moorzeen/loyalty-service/services/accrual/storage/postgres"
-	"github.com/moorzeen/loyalty-service/services/auth"
-	authPG "github.com/moorzeen/loyalty-service/services/auth/storage/postgres"
-	"github.com/moorzeen/loyalty-service/services/order"
-	ordersPG "github.com/moorzeen/loyalty-service/services/order/storage/postgres"
+	"github.com/moorzeen/loyalty-service/internal/accrual"
+	"github.com/moorzeen/loyalty-service/internal/auth"
+	"github.com/moorzeen/loyalty-service/internal/order"
+	"github.com/moorzeen/loyalty-service/internal/storage/postgres"
 )
 
 type LoyaltyServer struct {
@@ -27,23 +21,20 @@ type LoyaltyServer struct {
 }
 
 func NewServer(cfg *Config) (*LoyaltyServer, error) {
-	db, err := initDB(cfg.DatabaseURI)
+
+	storage, err := postgres.NewStorage(cfg.DatabaseURI)
 	if err != nil {
-		return nil, err
+
 	}
 
 	srv := &LoyaltyServer{}
 	srv.Config = *cfg
 
-	authStorage := authPG.NewStorage(db)
-	srv.AuthService = auth.NewService(authStorage)
+	srv.AuthService = auth.NewService(storage)
+	srv.OrderService = order.NewService(storage)
 
-	ordersStorage := ordersPG.NewStorage(db)
-	srv.OrderService = order.NewService(ordersStorage)
-
-	accrualStorage := accrualPG.NewStorage(db)
 	client := accrual.NewClient(srv.AccrualSystemAddress)
-	srv.AccrualService = accrual.NewService(accrualStorage, client)
+	srv.AccrualService = accrual.NewService(storage, client)
 
 	srv.Router = newRouter(srv)
 
@@ -57,18 +48,6 @@ func (s *LoyaltyServer) Run() {
 			log.Printf("Server failed: %s", err)
 		}
 	}()
-}
-
-func initDB(databaseURI string) (*pgxpool.Pool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	pool, err := pgxpool.Connect(ctx, databaseURI)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create a new connection pool: %w", err)
-	}
-
-	return pool, nil
 }
 
 func newRouter(srv *LoyaltyServer) *chi.Mux {

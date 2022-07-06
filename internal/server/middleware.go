@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/moorzeen/loyalty-service/services/auth"
+	"github.com/moorzeen/loyalty-service/internal/auth"
 )
 
 type ctxKey string

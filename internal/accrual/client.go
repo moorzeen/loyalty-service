@@ -7,17 +7,13 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/moorzeen/loyalty-service/internal/storage"
 )
 
 type Client struct {
 	http.Client
 	RunAddress string
-}
-
-type Accrual struct {
-	OrderNumber int64   `json:"order"`
-	Status      string  `json:"status"`
-	Accrual     float64 `json:"accrual"`
 }
 
 func NewClient(addr string) *Client {
@@ -30,7 +26,7 @@ func NewClient(addr string) *Client {
 	}
 }
 
-func (c *Client) GetAccrual(orderNumber int64) (Accrual, error) {
+func (c *Client) GetAccrual(orderNumber int64) (storage.Accrual, error) {
 
 	type forParsingJSON struct {
 		OrderNumber string  `json:"order"`
@@ -39,7 +35,7 @@ func (c *Client) GetAccrual(orderNumber int64) (Accrual, error) {
 	}
 	JSONStruct := forParsingJSON{}
 
-	acc := Accrual{}
+	acc := storage.Accrual{}
 
 	url := c.RunAddress + "/api/orders/" + strconv.FormatInt(orderNumber, 10)
 

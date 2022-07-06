@@ -1,4 +1,4 @@
-package server
+package postgres
 
 import (
 	"fmt"
@@ -8,8 +8,8 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-func DBmigration(databaseURL string) error {
-	m, err := migrate.New("file://server/", databaseURL)
+func Migration(databaseURL string) error {
+	m, err := migrate.New("file://internal/storage/postgres/", databaseURL)
 	if err != nil {
 		return fmt.Errorf("failed to init DB migrations: %w", err)
 	}

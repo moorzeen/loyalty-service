@@ -5,11 +5,13 @@ import (
 	"log"
 	"sync"
 	"time"
+
+	"github.com/moorzeen/loyalty-service/internal/storage"
 )
 
 type Service struct {
 	client      *Client
-	storage     Storage
+	storage     storage.Service
 	tick        *time.Ticker // Тикер запросов к сервису расчета бонусов
 	addChan     chan int64   // Канал добавления номера заказа в список опроса
 	delChan     chan int64
@@ -20,7 +22,7 @@ type Service struct {
 	mutex       *sync.Mutex
 }
 
-func NewService(str Storage, cli *Client) *Service {
+func NewService(str storage.Service, cli *Client) *Service {
 	acc := &Service{
 		client:      cli,
 		storage:     str,
@@ -42,7 +44,7 @@ func NewService(str Storage, cli *Client) *Service {
 }
 
 type resultChannel struct {
-	Accrual
+	storage.Accrual
 	err error
 }
 
@@ -96,7 +98,7 @@ func (s *Service) poll() {
 	}
 }
 
-func (s *Service) responseHandler(accrual Accrual, accErr error) {
+func (s *Service) responseHandler(accrual storage.Accrual, accErr error) {
 	if accErr != nil {
 		log.Println(accErr)
 	}
@@ -109,7 +111,7 @@ func (s *Service) responseHandler(accrual Accrual, accErr error) {
 			log.Println(err)
 		}
 
-		err = s.storage.UpdateBalance(userID, accrual.Accrual)
+		err = s.storage.UpdateBalance2(userID, accrual.Accrual)
 		if err != nil {
 			log.Println(err)
 		}

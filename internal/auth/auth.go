@@ -12,7 +12,8 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
-	"github.com/moorzeen/loyalty-service/services/auth/helpers"
+	"github.com/moorzeen/loyalty-service/internal/auth/helpers"
+	"github.com/moorzeen/loyalty-service/internal/storage"
 )
 
 const (
@@ -21,10 +22,10 @@ const (
 )
 
 type Service struct {
-	storage Storage
+	storage storage.Service
 }
 
-func NewService(str Storage) *Service {
+func NewService(str storage.Service) *Service {
 	return &Service{storage: str}
 }
 

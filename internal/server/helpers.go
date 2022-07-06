@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/moorzeen/loyalty-service/services/auth"
-	"github.com/moorzeen/loyalty-service/services/order"
+	"github.com/moorzeen/loyalty-service/internal/auth"
+	"github.com/moorzeen/loyalty-service/internal/order"
 )
 
 func errToStatus(err error) int {

@@ -7,11 +7,12 @@ import (
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
-	"github.com/moorzeen/loyalty-service/services/order/helpers"
+	"github.com/moorzeen/loyalty-service/internal/order/helpers"
+	"github.com/moorzeen/loyalty-service/internal/storage"
 )
 
 type Service struct {
-	storage Storage
+	storage storage.Service
 }
 
 type WithdrawRequest struct {
@@ -20,7 +21,7 @@ type WithdrawRequest struct {
 	WithdrawSum float64 `json:"sum"`
 }
 
-func NewService(str Storage) *Service {
+func NewService(str storage.Service) *Service {
 	return &Service{storage: str}
 }
 
@@ -54,7 +55,7 @@ func (o *Service) AddOrder(ctx context.Context, orderNumber string, userID uint6
 	return nil
 }
 
-func (o *Service) GetOrders(ctx context.Context, userID uint64) (*[]Order, error) {
+func (o *Service) GetOrders(ctx context.Context, userID uint64) (*[]storage.Order, error) {
 	orders, err := o.storage.GetOrdersList(ctx, userID)
 	if err != nil {
 		log.Println(err)
@@ -107,7 +108,7 @@ func (o *Service) Withdraw(ctx context.Context, request WithdrawRequest) error {
 	return nil
 }
 
-func (o *Service) GetWithdrawals(ctx context.Context, userID uint64) (*[]Withdrawal, error) {
+func (o *Service) GetWithdrawals(ctx context.Context, userID uint64) (*[]storage.Withdrawal, error) {
 	withdrawals, err := o.storage.GetUserWithdrawals(ctx, userID)
 	if err != nil {
 		log.Println(err)
