@@ -1,11 +1,8 @@
-package helpers
+package order
 
 import (
-	"errors"
 	"strconv"
 )
-
-var ErrInvalidOrderNumber = errors.New("invalid order number")
 
 func ParseOrderNumber(s string) (int64, error) {
 	orderNumber, err := strconv.ParseInt(s, 10, 64)

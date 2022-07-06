@@ -9,48 +9,48 @@ import (
 	"github.com/moorzeen/loyalty-service/internal/accrual"
 	"github.com/moorzeen/loyalty-service/internal/auth"
 	"github.com/moorzeen/loyalty-service/internal/order"
+	"github.com/moorzeen/loyalty-service/internal/storage"
 	"github.com/moorzeen/loyalty-service/internal/storage/postgres"
 )
 
 type LoyaltyServer struct {
-	Config
-	AuthService    *auth.Service
-	OrderService   *order.Service
-	AccrualService *accrual.Service
-	Router         *chi.Mux
+	config
+	storage storage.Service
+	auth    auth.Service
+	order   order.Service
+	accrual accrual.Service
+	Router  *chi.Mux
 }
 
-func NewServer(cfg *Config) (*LoyaltyServer, error) {
+func NewServer(cfg *config) (*LoyaltyServer, error) {
+	ls := &LoyaltyServer{}
+	ls.config = *cfg
 
-	storage, err := postgres.NewStorage(cfg.DatabaseURI)
+	var err error
+	ls.storage, err = postgres.NewStorage(cfg.DatabaseURI)
 	if err != nil {
 		return nil, err
 	}
 
-	srv := &LoyaltyServer{}
-	srv.Config = *cfg
+	ls.auth = auth.NewService(ls.storage)
+	ls.order = order.NewService(ls.storage)
+	client := accrual.NewClient(ls.AccrualAddress)
+	ls.accrual = accrual.NewService(ls.storage, client)
+	ls.Router = newRouter(ls)
 
-	srv.AuthService = auth.NewService(storage)
-	srv.OrderService = order.NewService(storage)
-
-	client := accrual.NewClient(srv.AccrualSystemAddress)
-	srv.AccrualService = accrual.NewService(storage, client)
-
-	srv.Router = newRouter(srv)
-
-	return srv, nil
+	return ls, nil
 }
 
-func (s *LoyaltyServer) Run() {
+func (ls *LoyaltyServer) Run() {
 	go func() {
-		err := http.ListenAndServe(s.RunAddress, s.Router)
+		err := http.ListenAndServe(ls.RunAddress, ls.Router)
 		if err != nil {
-			log.Printf("Server failed: %s", err)
+			log.Fatalf("Server error: %s", err)
 		}
 	}()
 }
 
-func newRouter(srv *LoyaltyServer) *chi.Mux {
+func newRouter(ls *LoyaltyServer) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -58,18 +58,17 @@ func newRouter(srv *LoyaltyServer) *chi.Mux {
 	r.Use(middleware.Recoverer)
 	r.Use(RequestDecompress)
 	r.Use(middleware.Compress(5))
-	r.Post("/api/user/register", srv.Register)
-	r.Post("/api/user/login", srv.Login)
+	r.Post("/api/user/register", ls.register)
+	r.Post("/api/user/login", ls.login)
 
 	// authorization required handlers
 	r.Group(func(r chi.Router) {
-		//r.Use(Authentication)
-		r.Use(Authenticator(*srv.AuthService))
-		r.Post("/api/user/orders", srv.NewOrder)
-		r.Get("/api/user/orders", srv.GetOrders)
-		r.Get("/api/user/balance", srv.GetBalance)
-		r.Post("/api/user/balance/withdraw", srv.Withdraw)
-		r.Get("/api/user/withdrawals", srv.GetWithdrawals)
+		r.Use(Authentication(ls.auth))
+		r.Post("/api/user/orders", ls.newOrder)
+		r.Get("/api/user/orders", ls.getOrders)
+		r.Get("/api/user/balance", ls.getBalance)
+		r.Post("/api/user/balance/withdraw", ls.withdraw)
+		r.Get("/api/user/withdrawals", ls.getWithdrawals)
 
 	})
 	return r

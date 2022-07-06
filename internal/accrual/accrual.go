@@ -22,8 +22,8 @@ type Service struct {
 	mutex       *sync.Mutex
 }
 
-func NewService(str storage.Service, cli *Client) *Service {
-	acc := &Service{
+func NewService(str storage.Service, cli *Client) Service {
+	acc := Service{
 		client:      cli,
 		storage:     str,
 		tick:        time.NewTicker(time.Second),

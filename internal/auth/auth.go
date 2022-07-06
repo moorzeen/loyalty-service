@@ -12,7 +12,6 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
-	"github.com/moorzeen/loyalty-service/internal/auth/helpers"
 	"github.com/moorzeen/loyalty-service/internal/storage"
 )
 
@@ -25,16 +24,16 @@ type Service struct {
 	storage storage.Service
 }
 
-func NewService(str storage.Service) *Service {
-	return &Service{storage: str}
+func NewService(str storage.Service) Service {
+	return Service{storage: str}
 }
 
 func (a *Service) SignUp(ctx context.Context, username, password string) error {
-	if err := helpers.PassComplexity(password); err != nil {
+	if err := PassComplexity(password); err != nil {
 		return ErrShortPassword
 	}
 
-	passwordHash := helpers.GenerateHash(password, []byte(passwordHashKey))
+	passwordHash := GenerateHash(password, []byte(passwordHashKey))
 
 	err := a.storage.AddUser(ctx, username, passwordHash)
 	var pgErr *pgconn.PgError
@@ -72,13 +71,13 @@ func (a *Service) SignIn(ctx context.Context, username, password string) (string
 	}
 
 	// compare incoming password with passwordHash from DB
-	passwordHash := helpers.GenerateHash(password, []byte(passwordHashKey))
+	passwordHash := GenerateHash(password, []byte(passwordHashKey))
 	if !hmac.Equal(passwordHash, user.PasswordHash) {
 		return "", ErrInvalidUser
 	}
 
 	// generate user signKey for session token
-	signKey, err := helpers.GenerateKey()
+	signKey, err := GenerateKey()
 	if err != nil {
 		log.Println(err)
 		return "", err
@@ -92,7 +91,7 @@ func (a *Service) SignIn(ctx context.Context, username, password string) (string
 	}
 
 	// generate userID signature
-	sign := helpers.GenerateHash(strconv.FormatUint(user.ID, 10), signKey)
+	sign := GenerateHash(strconv.FormatUint(user.ID, 10), signKey)
 
 	// make authToken
 	authToken := fmt.Sprintf("%d|%x", user.ID, sign)
@@ -119,7 +118,7 @@ func (a *Service) TokenCheck(ctx context.Context, authToken string) (uint64, err
 		return 0, err
 	}
 
-	if !bytes.Equal(sign, helpers.GenerateHash(strconv.FormatUint(userID, 10), session.SignKey)) {
+	if !bytes.Equal(sign, GenerateHash(strconv.FormatUint(userID, 10), session.SignKey)) {
 		return 0, ErrInvalidAuthToken
 	}
 

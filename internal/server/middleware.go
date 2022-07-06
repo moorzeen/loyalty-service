@@ -61,7 +61,7 @@ func Authentication(next http.Handler) http.Handler {
 }
 */
 
-func Authenticator(s auth.Service) func(http.Handler) http.Handler {
+func Authentication(s auth.Service) func(http.Handler) http.Handler {
 	ra := requestAuth{s}
 	return func(next http.Handler) http.Handler {
 		serveHTTP := func(w http.ResponseWriter, r *http.Request) {

@@ -16,21 +16,20 @@ func main() {
 	}
 
 	log.Printf(
-		"Configuration:\n- run address: %s\n- database URI: %s\n- accrual system address: %s\n",
-		cfg.RunAddress, cfg.DatabaseURI, cfg.AccrualSystemAddress)
+		"Starting configuration:\n- run address: %s\n- database URI: %s\n- accrual system address: %s\n",
+		cfg.RunAddress, cfg.DatabaseURI, cfg.AccrualAddress)
 
 	err = postgres.Migration(cfg.DatabaseURI)
 	if err != nil {
 		log.Fatalf("Failed to migrate DB: %s", err)
 	}
 
-	srv, err := server.NewServer(cfg)
+	ls, err := server.NewServer(cfg)
 	if err != nil {
 		log.Fatalf("Failed to init the server: %s", err)
 	}
 
-	srv.Run()
-
+	ls.Run()
 	log.Println("Server is listening and serving...")
 
 	quit := make(chan os.Signal, 1)
