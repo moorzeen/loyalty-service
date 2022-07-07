@@ -103,7 +103,7 @@ func (db *DB) GetOrder(ctx context.Context, number string) (*storage.Order, erro
 	return order, nil
 }
 
-func (db *DB) GetOrders(ctx context.Context, userID uint64) (*[]storage.Order, error) {
+func (db *DB) GetOrders(ctx context.Context, userID uint64) ([]storage.Order, error) {
 	var orders []storage.Order
 
 	query := `SELECT user_id, order_number, status, uploaded_at, accrual
@@ -127,7 +127,7 @@ func (db *DB) GetOrders(ctx context.Context, userID uint64) (*[]storage.Order, e
 		orders = append(orders, o)
 	}
 
-	return &orders, nil
+	return orders, nil
 }
 
 func (db *DB) GetBalance(ctx context.Context, userID uint64) (float64, float64, error) {
@@ -160,13 +160,13 @@ func (db *DB) UpdateBalance(ctx context.Context, userID uint64, bal float64, wth
 	return nil
 }
 
-func (db *DB) GetUserWithdrawals(ctx context.Context, userID uint64) (*[]storage.Withdrawal, error) {
+func (db *DB) GetWithdrawals(ctx context.Context, userID uint64) ([]storage.Withdrawal, error) {
 	var result []storage.Withdrawal
 
 	query := `SELECT order_number, sum, processed_at FROM withdrawals WHERE user_id = $1 order by processed_at`
 	rows, err := db.pool.Query(ctx, query, userID)
 	if err != nil {
-		return &result, err
+		return result, err
 	}
 
 	err = rows.Err()
@@ -183,7 +183,7 @@ func (db *DB) GetUserWithdrawals(ctx context.Context, userID uint64) (*[]storage
 		result = append(result, o)
 	}
 
-	return &result, nil
+	return result, nil
 
 }
 

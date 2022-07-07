@@ -131,14 +131,14 @@ func (ls *LoyaltyServer) getOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(*orders) == 0 {
+	if len(orders) == 0 {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
 	result := make([]order.Order, 0)
 
-	for _, v := range *orders {
+	for _, v := range orders {
 		item := order.Order{
 			Number:     v.OrderNumber,
 			Status:     v.Status,
@@ -234,7 +234,7 @@ func (ls *LoyaltyServer) getWithdrawals(w http.ResponseWriter, r *http.Request) 
 	}
 	result := make([]responseJSON, 0)
 
-	for _, v := range *withdrawals {
+	for _, v := range withdrawals {
 		item := responseJSON{v.OrderNumber, v.Sum, v.ProcessedAt}
 		result = append(result, item)
 	}

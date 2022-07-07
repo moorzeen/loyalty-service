@@ -62,7 +62,7 @@ func (o *Service) AddOrder(ctx context.Context, orderNumber string, userID uint6
 	return nil
 }
 
-func (o *Service) GetOrders(ctx context.Context, userID uint64) (*[]storage.Order, error) {
+func (o *Service) GetOrders(ctx context.Context, userID uint64) ([]storage.Order, error) {
 	orders, err := o.storage.GetOrders(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -111,8 +111,8 @@ func (o *Service) Withdraw(ctx context.Context, request Withdraw) error {
 	return nil
 }
 
-func (o *Service) GetWithdrawals(ctx context.Context, userID uint64) (*[]storage.Withdrawal, error) {
-	withdrawals, err := o.storage.GetUserWithdrawals(ctx, userID)
+func (o *Service) GetWithdrawals(ctx context.Context, userID uint64) ([]storage.Withdrawal, error) {
+	withdrawals, err := o.storage.GetWithdrawals(ctx, userID)
 	if err != nil {
 		return nil, err
 	}

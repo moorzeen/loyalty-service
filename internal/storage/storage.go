@@ -45,11 +45,11 @@ type Service interface {
 
 	AddOrder(ctx context.Context, number string, userID uint64) error
 	GetOrder(ctx context.Context, number string) (*Order, error)
-	GetOrders(ctx context.Context, userID uint64) (*[]Order, error)
+	GetOrders(ctx context.Context, userID uint64) ([]Order, error)
 	GetBalance(ctx context.Context, userID uint64) (float64, float64, error)
 	AddWithdrawal(ctx context.Context, userID uint64, number string, sum float64) error
 	UpdateBalance(ctx context.Context, userID uint64, bal float64, wth float64) error
-	GetUserWithdrawals(ctx context.Context, userID uint64) (*[]Withdrawal, error)
+	GetWithdrawals(ctx context.Context, userID uint64) ([]Withdrawal, error)
 
 	GetUnprocessedOrder() ([]string, error)
 	UpdateOrder(accrual Accrual) (uint64, error)
