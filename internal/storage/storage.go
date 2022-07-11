@@ -50,7 +50,8 @@ type Service interface {
 	Withdraw(ctx context.Context, userID uint64, number string, wth float64) error
 	GetWithdrawals(ctx context.Context, userID uint64) ([]Withdrawal, error)
 
-	GetUnprocessedOrder() ([]string, error)
+	GetProcessingOrders() ([]string, error)
+	GetNewOrders() ([]string, error)
 	UpdateOrder(accrual Accrual) (uint64, error)
 	Accrual(userID uint64, acc float64) error
 }

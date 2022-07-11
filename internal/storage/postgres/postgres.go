@@ -212,7 +212,33 @@ func (db *DB) GetWithdrawals(ctx context.Context, userID uint64) ([]storage.With
 
 }
 
-func (db *DB) GetUnprocessedOrder() ([]string, error) {
+func (db *DB) GetProcessingOrders() ([]string, error) {
+	var orders []string
+
+	query := `SELECT order_number FROM orders WHERE status = 'PROCESSING'`
+	rows, err := db.pool.Query(context.Background(), query)
+	if err != nil {
+		return nil, err
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var o string
+		err = rows.Scan(&o)
+		if err != nil {
+			return nil, err
+		}
+		orders = append(orders, o)
+	}
+
+	return orders, nil
+}
+
+func (db *DB) GetNewOrders() ([]string, error) {
 	var orders []string
 
 	query := `UPDATE orders SET status = 'PROCESSING' WHERE status = 'NEW' RETURNING order_number`
