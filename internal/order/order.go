@@ -81,29 +81,11 @@ func (o *Service) GetBalance(ctx context.Context, userID uint64) (float64, float
 }
 
 func (o *Service) Withdraw(ctx context.Context, request Withdraw) error {
-
 	if err := parseOrderNumber(request.OrderNumber); err != nil {
 		return ErrInvalidOrderNumber
 	}
 
-	bal, wtn, err := o.GetBalance(ctx, request.UserID)
-	if err != nil {
-		return err
-	}
-
-	if request.WithdrawSum > bal {
-		return ErrInsufficientFunds
-	}
-
-	err = o.storage.AddWithdrawal(ctx, request.UserID, request.OrderNumber, request.WithdrawSum)
-	if err != nil {
-		return err
-	}
-
-	bal -= request.WithdrawSum
-	wtn += request.WithdrawSum
-
-	err = o.storage.UpdateBalance(ctx, request.UserID, bal, wtn)
+	err := o.storage.Withdraw(ctx, request.UserID, request.OrderNumber, request.WithdrawSum)
 	if err != nil {
 		return err
 	}

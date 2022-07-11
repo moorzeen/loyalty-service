@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/moorzeen/loyalty-service/internal/order"
 	"github.com/moorzeen/loyalty-service/internal/storage"
 )
 
@@ -142,21 +144,44 @@ func (db *DB) GetBalance(ctx context.Context, userID uint64) (float64, float64, 
 	return bal, wtn, nil
 }
 
-func (db *DB) AddWithdrawal(ctx context.Context, userID uint64, number string, sum float64) error {
-	query := `INSERT INTO withdrawals (user_id, order_number, sum) VALUES ($1, $2, $3)`
-	_, err := db.pool.Exec(ctx, query, userID, number, sum)
+func (db *DB) Withdraw(ctx context.Context, userID uint64, number string, wth float64) error {
+	tx, err := db.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return err
 	}
-	return nil
-}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
 
-func (db *DB) UpdateBalance(ctx context.Context, userID uint64, bal float64, wth float64) error {
-	updateQuery := `UPDATE accounts SET balance = $1, withdrawn = $2 WHERE user_id = $3`
-	_, err := db.pool.Exec(ctx, updateQuery, bal, wth, userID)
+	// confirm that funds is enough for the withdrawal
+	var balance float64
+	balanceQuery := `SELECT balance FROM accounts WHERE user_id = $1 FOR UPDATE`
+	err = tx.QueryRow(ctx, balanceQuery, userID).Scan(&balance)
 	if err != nil {
 		return err
 	}
+	if wth > balance {
+		return order.ErrInsufficientFunds
+	}
+
+	// create a new row in the withdrawals table
+	addWithdrawQuery := `INSERT INTO withdrawals (user_id, order_number, sum) VALUES ($1, $2, $3)`
+	_, err = tx.Exec(ctx, addWithdrawQuery, userID, number, wth)
+	if err != nil {
+		return err
+	}
+
+	// update balance
+	updateBalanceQuery := `UPDATE accounts SET balance = balance - $1, withdrawn = withdrawn + $1 WHERE user_id = $2`
+	_, err = tx.Exec(ctx, updateBalanceQuery, wth, userID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -47,8 +47,7 @@ type Service interface {
 	GetOrder(ctx context.Context, number string) (*Order, error)
 	GetOrders(ctx context.Context, userID uint64) ([]Order, error)
 	GetBalance(ctx context.Context, userID uint64) (float64, float64, error)
-	AddWithdrawal(ctx context.Context, userID uint64, number string, sum float64) error
-	UpdateBalance(ctx context.Context, userID uint64, bal float64, wth float64) error
+	Withdraw(ctx context.Context, userID uint64, number string, wth float64) error
 	GetWithdrawals(ctx context.Context, userID uint64) ([]Withdrawal, error)
 
 	GetUnprocessedOrder() ([]string, error)
