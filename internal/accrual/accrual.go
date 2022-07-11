@@ -13,7 +13,6 @@ type Service struct {
 	storage     storage.Service
 	tick        *time.Ticker      // Тикер для проверки наличия заказов в буфере
 	orderBuffer map[string]string // Буфер заказов для обработки
-	startChan   chan struct{}     // Канал для сигнала о старте опроса
 	stopChan    chan struct{}     // Канал для сигнала о приостановке опроса
 	mutex       *sync.Mutex
 }
@@ -24,7 +23,6 @@ func NewService(str storage.Service, cli *Client) Service {
 		storage:     str,
 		tick:        time.NewTicker(time.Second),
 		orderBuffer: make(map[string]string, 0),
-		startChan:   make(chan struct{}),
 		stopChan:    make(chan struct{}),
 		mutex:       &sync.Mutex{},
 	}
